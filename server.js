@@ -8,7 +8,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// --- ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ ---
 const MONGO_URI = 'mongodb+srv://nookadmin:aIgQ5nkwI0wTDVlY@nookcluster.vukngte.mongodb.net/?appName=NookCluster';
 
 mongoose.connect(MONGO_URI)
@@ -86,29 +85,15 @@ io.on('connection', (socket) => {
     socket.to(room).emit('systemMessage', { text: `Пользователь ${nick} вошел в комнату` });
   });
 
-  // --- НОВОЕ: ОБНОВЛЕНИЕ АВАТАРКИ ИЗ ИНТЕРФЕЙСА ---
   socket.on('changeAvatar', async (newAvatarUrl, callback) => {
     try {
       const currentUser = users[socket.id];
       if (!currentUser) return callback({ success: false, message: 'Пользователь не авторизован.' });
-
-      // 1. Обновляем в базе данных MongoDB навсегда
       await User.updateOne({ nick: currentUser.nick }, { avatar: newAvatarUrl });
-
-      // 2. Обновляем в текущей оперативной памяти сервера
       currentUser.avatar = newAvatarUrl;
-
-      // 3. Оповещаем всех в комнате, чтобы у них мгновенно перерисовался наш аватар
-      io.to(currentUser.room).emit('move', {
-        nick: currentUser.nick,
-        avatar: newAvatarUrl,
-        x: currentUser.x,
-        y: currentUser.y
-      });
-
+      io.to(currentUser.room).emit('move', { nick: currentUser.nick, avatar: newAvatarUrl, x: currentUser.x, y: currentUser.y });
       callback({ success: true });
     } catch (error) {
-      console.error(error);
       callback({ success: false, message: 'Ошибка сервера при обновлении аватара.' });
     }
   });
@@ -122,9 +107,7 @@ io.on('connection', (socket) => {
   socket.on('privateMessage', (data) => {
     const sender = users[socket.id];
     if (!sender) return;
-
     const targetEntry = Object.entries(users).find(([id, u]) => u.nick === data.to);
-
     if (targetEntry) {
       const targetSocketId = targetEntry[0];
       const msgPayload = { from: sender.nick, to: data.to, text: data.text, avatar: sender.avatar };
@@ -141,6 +124,16 @@ io.on('connection', (socket) => {
       users[socket.id].y = data.y;
       users[socket.id].avatar = data.avatar;
       socket.to(users[socket.id].room).emit('move', data);
+    }
+  });
+
+  // --- НОВОЕ: ТРАНСЛЯЦИЯ СОСТОЯНИЯ ПЕЧАТИ ---
+  socket.on('typing', (isTyping) => {
+    if (users[socket.id]) {
+      socket.to(users[socket.id].room).emit('userTyping', {
+        nick: users[socket.id].nick,
+        isTyping: isTyping
+      });
     }
   });
 
