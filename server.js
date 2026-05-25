@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// ВСТАВЬ СЮДА СВОЙ ПАРОЛЬ ОТ БАЗЫ
+// --- ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ ---
 const MONGO_URI = 'mongodb+srv://nookadmin:aIgQ5nkwI0wTDVlY@nookcluster.vukngte.mongodb.net/?appName=NookCluster';
 
 mongoose.connect(MONGO_URI)
@@ -67,11 +67,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('joinRoom', ({ nick, room, avatar, x, y }) => {
+    // Если пользователь уже был в комнате — значит он переходит в другую локацию
     if (users[socket.id] && users[socket.id].room) {
       const oldRoom = users[socket.id].room;
       socket.leave(oldRoom);
       sendOnlineList(oldRoom);
       io.to(oldRoom).emit('userLeft', nick);
+      
+      // Лог для старой комнаты: юзер ушел
+      io.to(oldRoom).emit('systemMessage', { text: `Пользователь ${nick} перешел в другую комнату` });
     }
 
     users[socket.id] = { nick, room, avatar, x: x || 50, y: y || 50 };
@@ -81,6 +85,9 @@ io.on('connection', (socket) => {
     const usersInRoom = Object.values(users).filter(u => u.room === room);
     socket.emit('roomState', usersInRoom);
     socket.to(room).emit('userSpawned', users[socket.id]);
+    
+    // Лог для новой комнаты: юзер вошел
+    socket.to(room).emit('systemMessage', { text: `Пользователь ${nick} вошел в комнату` });
   });
 
   socket.on('chatMessage', (data) => {
@@ -89,25 +96,19 @@ io.on('connection', (socket) => {
     }
   });
 
-  // --- НОВОЕ: ОБРАБОТКА ЛИЧНЫХ СООБЩЕНИЙ ---
   socket.on('privateMessage', (data) => {
     const sender = users[socket.id];
     if (!sender) return;
 
-    // Ищем сокет адресата по его нику во всём объекте users
     const targetEntry = Object.entries(users).find(([id, u]) => u.nick === data.to);
 
     if (targetEntry) {
       const targetSocketId = targetEntry[0];
       const msgPayload = { from: sender.nick, to: data.to, text: data.text, avatar: sender.avatar };
-      
-      // Отправляем адресату
       io.to(targetSocketId).emit('privateMessage', msgPayload);
-      // Возвращаем отправителю (чтобы он увидел свой текст в истории)
       socket.emit('privateMessage', msgPayload);
     } else {
-      // Если человек вышел или в другой комнате
-      socket.emit('systemMessage', { text: `Пользователь ${data.to} не найден.` });
+      socket.emit('systemMessage', { text: `Пользователь ${data.to} не найден или не в сети.` });
     }
   });
 
@@ -126,6 +127,9 @@ io.on('connection', (socket) => {
       delete users[socket.id];
       sendOnlineList(room);
       io.to(room).emit('userLeft', nick);
+      
+      // Лог полного выхода из чата (закрыл вкладку или нажал логаут)
+      io.to(room).emit('systemMessage', { text: `Пользователь ${nick} покинул чат` });
     }
   });
 });
