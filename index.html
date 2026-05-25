@@ -8,9 +8,11 @@
         body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
         
-        /* Стили для блока онлайна */
-        #online-header { padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 14px; }
-        #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 50px; max-height: 150px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
+        #room-selector { padding: 10px; background: #1e1e24; border-bottom: 1px solid #3f3f4e; }
+        #room-select { width: 100%; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
+        
+        #online-header { padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 13px; }
+        #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 40px; max-height: 120px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
         .online-user-item { margin-bottom: 5px; }
 
         #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
@@ -18,11 +20,46 @@
         #chat-input-area { display: flex; padding: 10px; background: #23232c; }
         #chat-input { flex: 1; padding: 10px; border: none; border-radius: 4px; background: #1e1e24; color: #fff; outline: none; }
         
-        #room { flex: 1; position: relative; background: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop') center/cover; cursor: pointer; overflow: hidden; }
+        #room { flex: 1; position: relative; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
         
         .avatar-container { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: top 0.4s ease-out, left 0.4s ease-out; pointer-events: none; width: 120px; }
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
         .nick-label { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; white-space: nowrap; }
+        
+        .speech-bubble {
+            position: absolute;
+            bottom: 100%; 
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            margin-bottom: 10px;
+            max-width: 160px;
+            word-wrap: break-word;
+            white-space: normal;
+            z-index: 20;
+            animation: popIn 0.2s ease-out;
+        }
+        
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #fff transparent transparent transparent;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
         
         #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
         #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; }
@@ -55,10 +92,18 @@
     </div>
 
     <div id="sidebar">
+        <div id="room-selector">
+            <select id="room-select" onchange="changeRoom()">
+                <option value="main">Главная комната</option>
+                <option value="sicily">Сицилийский берег</option>
+                <option value="garden">Летний сад</option>
+            </select>
+        </div>
+
         <div id="online-header">В комнате: <span id="online-count">0</span></div>
         <div id="online-list"></div>
 
-        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36;">Чат</div>
+        <div style="padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36; font-size: 13px;">Чат</div>
         <div id="chat-history"></div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Написать сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()">
@@ -71,7 +116,32 @@
         const socket = io('https://nook-chat.onrender.com'); 
         let myNick = '';
         let myAvatarUrl = '';
-        const room = document.getElementById('room');
+        let currentRoom = 'main';
+        const roomDiv = document.getElementById('room');
+
+        const roomBackgrounds = {
+            'main': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop',
+            'sicily': 'https://images.unsplash.com/photo-1533588145244-6330ce148d21?q=80&w=2070&auto=format&fit=crop',
+            'garden': 'https://images.unsplash.com/photo-1558350172-2775a2f582f3?q=80&w=2070&auto=format&fit=crop'
+        };
+
+        roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
+
+        // ПРОВЕРКА ЛОКАЛСТОРАДЖА ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedNick = localStorage.getItem('nook_nick');
+            const savedAvatar = localStorage.getItem('nook_avatar');
+
+            if (savedNick) {
+                document.getElementById('nickname-input').value = savedNick;
+            }
+            if (savedAvatar) {
+                myAvatarUrl = savedAvatar;
+                const label = document.getElementById('file-label');
+                label.innerText = '✔️ Предыдущий аватар сохранен';
+                label.style.borderColor = '#6c5ce7';
+            }
+        });
 
         function displayFileName() {
             const input = document.getElementById('avatar-file-input');
@@ -90,10 +160,10 @@
             if (nickInput.value.trim().length > 0) {
                 myNick = nickInput.value.trim();
                 
+                // Если выбран НОВЫЙ файл, загружаем его и обновляем ссылку
                 if (fileInput.files.length > 0) {
                     loginBtn.innerText = 'Загрузка аватара...';
                     loginBtn.disabled = true;
-                    
                     try {
                         myAvatarUrl = await uploadToCloudinary(fileInput.files[0]);
                     } catch (error) {
@@ -102,23 +172,31 @@
                     }
                 }
                 
+                // ЗАПИСЫВАЕМ ДАННЫЕ В LOCALSTORAGE ДЛЯ СЛЕДУЮЩЕГО РАЗА
+                localStorage.setItem('nook_nick', myNick);
+                localStorage.setItem('nook_avatar', myAvatarUrl);
+                
                 document.getElementById('overlay').style.display = 'none'; 
+                socket.emit('joinRoom', { nick: myNick, room: currentRoom });
                 updateAvatar(myNick, myAvatarUrl, 50, 50);
-
-                // СООБЩАЕМ СЕРВЕРУ, ЧТО МЫ ВОШЛИ, ЧТОБЫ ПОПАСТЬ В СПИСОК
-                socket.emit('userJoined', myNick);
             }
         }
 
-        // ОБРАБОТЧИК СПИСКА ОНЛАЙНА ОТ СЕРВЕРА
-        socket.on('updateOnlineList', (users) => {
-            document.getElementById('online-count').innerText = users.length;
-            const listDiv = document.getElementById('online-list');
-            listDiv.innerHTML = users.map(user => `<div class="online-user-item">• ${user}</div>`).join('');
-        });
+        function changeRoom() {
+            const select = document.getElementById('room-select');
+            currentRoom = select.value;
+            roomDiv.style.backgroundImage = `url('${roomBackgrounds[currentRoom]}')`;
+            document.getElementById('chat-history').innerHTML = '<p style="color: #aaa; font-style: italic; text-align: center;">Вы перешли в новую комнату</p>';
+            
+            const avatars = document.querySelectorAll('.avatar-container');
+            avatars.forEach(avatar => {
+                if (avatar.id !== 'avatar-' + myNick) avatar.remove();
+            });
+
+            socket.emit('joinRoom', { nick: myNick, room: currentRoom });
+        }
 
         async function uploadToCloudinary(file) {
-            // ВСТАВЬ СВОИ КЛЮЧИ СЮДА ПЕРЕД СОХРАНЕНИЕМ!
             const CLOUD_NAME = 'dzpqigdfz'; 
             const UPLOAD_PRESET = 'ml_default'; 
             
@@ -130,16 +208,25 @@
                 method: 'POST',
                 body: formData
             });
-            
             if (!response.ok) throw new Error('Cloudinary upload failed');
-            
             const data = await response.json();
             return data.secure_url;
         }
 
-        room.addEventListener('click', (e) => {
+        socket.on('userLeft', (nick) => {
+            const avatarNode = document.getElementById('avatar-' + nick);
+            if (avatarNode) avatarNode.remove();
+        });
+
+        socket.on('updateOnlineList', (users) => {
+            document.getElementById('online-count').innerText = users.length;
+            const listDiv = document.getElementById('online-list');
+            listDiv.innerHTML = users.map(user => `<div class="online-user-item">• ${user}</div>`).join('');
+        });
+
+        roomDiv.addEventListener('click', (e) => {
             if (!myNick) return; 
-            const rect = room.getBoundingClientRect();
+            const rect = roomDiv.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
 
@@ -159,15 +246,15 @@
                 avatarNode = document.createElement('div');
                 avatarNode.id = avatarId;
                 avatarNode.className = 'avatar-container';
-                room.appendChild(avatarNode);
+                roomDiv.appendChild(avatarNode);
             }
 
-            let imgHtml = '';
-            if (avatarUrl) {
-                imgHtml = `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'" alt="prop">`;
-            }
+            let existingBubble = avatarNode.querySelector('.speech-bubble');
+            let bubbleHtml = existingBubble ? existingBubble.outerHTML : '';
+            let imgHtml = avatarUrl ? `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'" alt="prop">` : '';
 
             avatarNode.innerHTML = `
+                ${bubbleHtml}
                 ${imgHtml}
                 <div class="nick-label">${nick}</div>
             `;
@@ -176,12 +263,32 @@
             avatarNode.style.top = `calc(${y}% - 60px)`;
         }
 
+        function showSpeechBubble(nick, text) {
+            const avatarId = 'avatar-' + nick;
+            const avatarNode = document.getElementById(avatarId);
+            if (!avatarNode) return;
+
+            const oldBubble = avatarNode.querySelector('.speech-bubble');
+            if (oldBubble) oldBubble.remove();
+
+            const bubble = document.createElement('div');
+            bubble.className = 'speech-bubble';
+            bubble.innerText = text;
+            
+            avatarNode.insertBefore(bubble, avatarNode.firstChild);
+
+            setTimeout(() => {
+                if (bubble && bubble.parentNode) bubble.remove();
+            }, 5000);
+        }
+
         function sendMessage() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
             if (msg) {
                 socket.emit('chatMessage', { nick: myNick, avatar: myAvatarUrl, text: msg });
                 addMessageToChat(myNick, msg, '#6c5ce7');
+                showSpeechBubble(myNick, msg); 
                 input.value = '';
             }
         }
@@ -191,6 +298,7 @@
             if (!document.getElementById('avatar-' + data.nick)) {
                 updateAvatar(data.nick, data.avatar, 50, 50);
             }
+            showSpeechBubble(data.nick, data.text); 
         });
 
         function addMessageToChat(nick, text, color) {
