@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Nook Chat</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
+        #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
+        #chat-history p { margin: 5px 0; line-height: 1.4; }
+        #chat-input-area { display: flex; padding: 10px; background: #23232c; }
+        #chat-input { flex: 1; padding: 10px; border: none; border-radius: 4px; background: #1e1e24; color: #fff; outline: none; }
+        /* Комната с фоном */
+        #room { flex: 1; position: relative; background: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop') center/cover; }
+        /* Плавающий никнейм */
+        .avatar { position: absolute; padding: 5px 12px; background: rgba(0,0,0,0.7); border-radius: 15px; font-size: 13px; font-weight: bold; }
+        /* Окно входа */
+        #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #nickname-input { padding: 12px; margin-top: 15px; width: 80%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 16px; outline: none; }
+        button { padding: 12px 30px; margin-top: 20px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #5a4bcf; }
+    </style>
+</head>
+<body>
+    <!-- Экран авторизации -->
+    <div id="overlay">
+        <div id="login-box">
+            <h2>Добро пожаловать в Nook</h2>
+            <input type="text" id="nickname-input" placeholder="Введи свой никнейм..." autofocus>
+            <br>
+            <button onclick="joinNook()">Войти</button>
+        </div>
+    </div>
+
+    <!-- Интерфейс чата -->
+    <div id="sidebar">
+        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center;">Текстовый чат</div>
+        <div id="chat-history"></div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Написать сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        </div>
+    </div>
+    <div id="room"></div>
+
+    <script>
+        // Подключаемся к твоему серверу на Render
+        const socket = io('https://nook-chat.onrender.com'); 
+        let myNick = '';
+
+        function joinNook() {
+            const input = document.getElementById('nickname-input');
+            if (input.value.trim().length > 0) {
+                myNick = input.value.trim();
+                document.getElementById('overlay').style.display = 'none'; // Скрываем окно входа
+                
+                // Ставим свой ник по центру экрана (позже сделаем перемещение)
+                createAvatar('my-avatar', myNick, 50, 50);
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (msg) {
+                // Отправляем на сервер
+                socket.emit('chatMessage', { nick: myNick, text: msg });
+                // Показываем у себя
+                addMessageToChat(myNick, msg, '#6c5ce7');
+                input.value = '';
+            }
+        }
+
+        // Слушаем чужие сообщения
+        socket.on('message', (data) => {
+            addMessageToChat(data.nick, data.text, '#a29bfe');
+        });
+
+        function addMessageToChat(nick, text, color) {
+            const history = document.getElementById('chat-history');
+            history.innerHTML += `<p><strong style="color:${color}">${nick}:</strong> ${text}</p>`;
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function createAvatar(id, nick, x, y) {
+            const room = document.getElementById('room');
+            let avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.innerText = nick;
+            // Центрируем по координатам
+            avatar.style.left = `calc(${x}% - 20px)`;
+            avatar.style.top = `calc(${y}% - 15px)`;
+            room.appendChild(avatar);
+        }
+    </script>
+</body>
+</html>
