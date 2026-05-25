@@ -1,23 +1,20 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose'); // Библиотека для базы данных
-const bcrypt = require('bcryptjs');   // Библиотека для шифрования паролей
+const mongoose = require('mongoose'); 
+const bcrypt = require('bcryptjs');   
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// --- ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ ---
-// ВСТАВЬ СВОЙ ПАРОЛЬ ВОТ СЮДА:
+// ВСТАВЬ СЮДА СВОЙ ПАРОЛЬ ОТ БАЗЫ
 const MONGO_URI = 'mongodb+srv://nookadmin:aIgQ5nkwI0wTDVlY@nookcluster.vukngte.mongodb.net/?appName=NookCluster';
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log('Успешно подключились к MongoDB!'))
   .catch(err => console.error('Ошибка подключения к базе:', err));
 
-// --- СХЕМА ПОЛЬЗОВАТЕЛЯ ---
-// Так выглядит структура записи в нашей базе
 const userSchema = new mongoose.Schema({
   nick: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -25,7 +22,6 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// Хранилище онлайна: ID сокета -> { nick, room, avatar, x, y }
 const users = {};
 
 function sendOnlineList(room) {
@@ -36,63 +32,40 @@ function sendOnlineList(room) {
 }
 
 app.get('/', (req, res) => {
-  res.send('Сервер Nook Chat успешно запущен и работает с базой данных!');
+  res.send('Сервер Nook Chat успешно запущен!');
 });
 
 io.on('connection', (socket) => {
-  console.log('Новый коннект!');
-
-  // --- РЕГИСТРАЦИЯ НОВОГО ПОЛЬЗОВАТЕЛЯ ---
+  
   socket.on('register', async (data, callback) => {
     try {
-      // Ищем, нет ли уже такого ника
       const existingUser = await User.findOne({ nick: data.nick });
-      if (existingUser) {
-        return callback({ success: false, message: 'Этот ник уже занят!' });
-      }
+      if (existingUser) return callback({ success: false, message: 'Этот ник уже занят!' });
       
-      // Шифруем пароль перед сохранением
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      
-      // Создаем новую запись в базе
-      const newUser = new User({
-        nick: data.nick,
-        password: hashedPassword,
-        avatar: data.avatar || ''
-      });
+      const newUser = new User({ nick: data.nick, password: hashedPassword, avatar: data.avatar || '' });
       await newUser.save();
       
       callback({ success: true, message: 'Регистрация прошла успешно!' });
     } catch (error) {
-      console.error(error);
       callback({ success: false, message: 'Ошибка сервера при регистрации.' });
     }
   });
 
-  // --- ВХОД (АВТОРИЗАЦИЯ) ---
   socket.on('login', async (data, callback) => {
     try {
-      // Ищем пользователя в базе
       const user = await User.findOne({ nick: data.nick });
-      if (!user) {
-        return callback({ success: false, message: 'Такого пользователя не существует!' });
-      }
+      if (!user) return callback({ success: false, message: 'Такого пользователя не существует!' });
       
-      // Сравниваем введенный пароль с зашифрованным в базе
       const isMatch = await bcrypt.compare(data.password, user.password);
-      if (!isMatch) {
-        return callback({ success: false, message: 'Неверный пароль!' });
-      }
+      if (!isMatch) return callback({ success: false, message: 'Неверный пароль!' });
       
-      // Если всё ок, отдаем ссылку на аватарку
       callback({ success: true, avatar: user.avatar });
     } catch (error) {
-      console.error(error);
       callback({ success: false, message: 'Ошибка сервера при входе.' });
     }
   });
 
-  // --- ЛОГИКА КОМНАТ И ЧАТА (осталась без изменений) ---
   socket.on('joinRoom', ({ nick, room, avatar, x, y }) => {
     if (users[socket.id] && users[socket.id].room) {
       const oldRoom = users[socket.id].room;
@@ -113,6 +86,28 @@ io.on('connection', (socket) => {
   socket.on('chatMessage', (data) => {
     if (users[socket.id]) {
       socket.to(users[socket.id].room).emit('message', data);
+    }
+  });
+
+  // --- НОВОЕ: ОБРАБОТКА ЛИЧНЫХ СООБЩЕНИЙ ---
+  socket.on('privateMessage', (data) => {
+    const sender = users[socket.id];
+    if (!sender) return;
+
+    // Ищем сокет адресата по его нику во всём объекте users
+    const targetEntry = Object.entries(users).find(([id, u]) => u.nick === data.to);
+
+    if (targetEntry) {
+      const targetSocketId = targetEntry[0];
+      const msgPayload = { from: sender.nick, to: data.to, text: data.text, avatar: sender.avatar };
+      
+      // Отправляем адресату
+      io.to(targetSocketId).emit('privateMessage', msgPayload);
+      // Возвращаем отправителю (чтобы он увидел свой текст в истории)
+      socket.emit('privateMessage', msgPayload);
+    } else {
+      // Если человек вышел или в другой комнате
+      socket.emit('systemMessage', { text: `Пользователь ${data.to} не найден.` });
     }
   });
 
