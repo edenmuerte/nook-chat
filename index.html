@@ -9,26 +9,29 @@
         body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
         
-        #room-selector { padding: 10px; background: #1e1e24; border-bottom: 1px solid #3f3f4e; }
-        #room-select { width: 100%; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
+        /* Изменили селектор комнат, чтобы вместить кнопку логаута */
+        #room-selector { padding: 10px; background: #1e1e24; border-bottom: 1px solid #3f3f4e; display: flex; gap: 10px; }
+        #room-select { flex: 1; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
         
+        /* Стили для кнопки логаута */
+        .logout-btn { background: #ff4757; color: white; border: none; padding: 0 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
+        .logout-btn:hover { background: #ff6b81; }
+
         #online-header { padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 13px; }
         #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 40px; max-height: 120px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
         
-        /* Делаем ники в списке кликабельными */
         .online-user-item { margin-bottom: 5px; cursor: pointer; transition: color 0.2s; }
         .online-user-item:hover { color: #fff; }
 
         #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
         #chat-history p { margin: 5px 0; line-height: 1.4; overflow-wrap: break-word; }
         
-        /* СТИЛИ ДЛЯ ЛИЧНЫХ СООБЩЕНИЙ В ЧАТЕ */
         .private-msg-text {
             color: #d8a1ff; 
             font-style: italic;
             border-left: 3px solid #d8a1ff;
             padding-left: 8px;
-            background: rgba(216, 161, 255, 0.08); /* Легкая подсветка фона */
+            background: rgba(216, 161, 255, 0.08); 
             border-radius: 0 4px 4px 0;
             padding-top: 4px;
             padding-bottom: 4px;
@@ -36,19 +39,7 @@
 
         #chat-input-area { display: flex; flex-direction: column; padding: 10px; background: #23232c; }
         
-        /* Плашка кому мы пишем */
-        #private-target-badge {
-            display: none;
-            background: #d8a1ff;
-            color: #2b2b36;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 4px;
-            margin-bottom: 5px;
-            cursor: pointer;
-            align-self: flex-start;
-        }
+        #private-target-badge { display: none; background: #d8a1ff; color: #2b2b36; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 4px; margin-bottom: 5px; cursor: pointer; align-self: flex-start; }
         #private-target-badge:hover { background: #e3b8ff; }
 
         #chat-input { padding: 10px; border: none; border-radius: 4px; background: #1e1e24; color: #fff; outline: none; }
@@ -59,20 +50,11 @@
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
         .nick-label { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; white-space: nowrap; }
         
-        /* Обычный бабл */
         .speech-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 8px 12px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-bottom: 10px; max-width: 160px; word-wrap: break-word; white-space: normal; z-index: 20; animation: popIn 0.2s ease-out; }
         .speech-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #fff transparent transparent transparent; }
 
-        /* ПРОЗРАЧНЫЙ БАБЛ ДЛЯ ЛИЧКИ */
-        .speech-bubble.private {
-            background: rgba(255, 255, 255, 0.75); 
-            border: 1.5px dashed #d8a1ff;
-            color: #2b2b36;
-            box-shadow: 0 4px 15px rgba(216, 161, 255, 0.3);
-        }
-        .speech-bubble.private::after {
-            border-color: rgba(255, 255, 255, 0.75) transparent transparent transparent;
-        }
+        .speech-bubble.private { background: rgba(255, 255, 255, 0.75); border: 1.5px dashed #d8a1ff; color: #2b2b36; box-shadow: 0 4px 15px rgba(216, 161, 255, 0.3); }
+        .speech-bubble.private::after { border-color: rgba(255, 255, 255, 0.75) transparent transparent transparent; }
 
         @keyframes popIn { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         
@@ -133,6 +115,7 @@
                 <option value="sicily">Сицилийский берег</option>
                 <option value="garden">Летний сад</option>
             </select>
+            <button class="logout-btn" onclick="logout()" title="Выйти из аккаунта">Выйти</button>
         </div>
         <div id="online-header">В комнате: <span id="online-count">0</span></div>
         <div id="online-list"></div>
@@ -152,7 +135,7 @@
         let myAvatarUrl = '';
         let currentRoom = 'main';
         let authMode = 'login'; 
-        let privateTarget = null; // Кому мы сейчас шепчем
+        let privateTarget = null; 
         const roomDiv = document.getElementById('room');
 
         const roomBackgrounds = {
@@ -170,6 +153,13 @@
                 document.getElementById('password-input').value = savedPass;
             }
         });
+
+        // НОВАЯ ФУНКЦИЯ ЛОГАУТА
+        function logout() {
+            localStorage.removeItem('nook_nick');
+            localStorage.removeItem('nook_pass');
+            window.location.reload(); 
+        }
 
         function switchMode(mode) {
             authMode = mode;
@@ -251,9 +241,8 @@
             return data.secure_url;
         }
 
-        // --- ЛОГИКА ШЕПОТА ---
         function setPrivateTarget(nick) {
-            if (nick === myNick) return; // Самому себе писать нельзя
+            if (nick === myNick) return; 
             privateTarget = nick;
             const badge = document.getElementById('private-target-badge');
             badge.innerText = `Шепот для: ${nick} ✖`;
@@ -266,7 +255,6 @@
             document.getElementById('private-target-badge').style.display = 'none';
         }
 
-        // --- ЛОГИКА КОМНАТ И ЧАТА ---
         function changeRoom() {
             const select = document.getElementById('room-select');
             currentRoom = select.value;
@@ -289,7 +277,6 @@
             if (avatarNode) avatarNode.remove();
         });
 
-        // Теперь при отрисовке списка онлайна добавляем onclick
         socket.on('updateOnlineList', (users) => {
             document.getElementById('online-count').innerText = users.length;
             const listDiv = document.getElementById('online-list');
@@ -327,7 +314,6 @@
             avatarNode.style.top = `calc(${y}% - 60px)`;
         }
 
-        // Флаг isPrivate определяет стиль бабла
         function showSpeechBubble(nick, text, isPrivate = false) {
             const avatarId = 'avatar-' + nick;
             const avatarNode = document.getElementById(avatarId);
@@ -337,7 +323,6 @@
             if (oldBubble) oldBubble.remove();
 
             const bubble = document.createElement('div');
-            // Если личное, добавляем класс private
             bubble.className = isPrivate ? 'speech-bubble private' : 'speech-bubble';
             bubble.innerText = text;
             
@@ -350,10 +335,8 @@
             const msg = input.value.trim();
             if (msg) {
                 if (privateTarget) {
-                    // Отправляем личку
                     socket.emit('privateMessage', { to: privateTarget, text: msg });
                 } else {
-                    // Отправляем всем
                     socket.emit('chatMessage', { nick: myNick, avatar: myAvatarUrl, text: msg });
                     addMessageToChat(myNick, msg, '#6c5ce7');
                     showSpeechBubble(myNick, msg, false); 
@@ -362,14 +345,12 @@
             }
         }
 
-        // ОБРАБОТЧИКИ СООБЩЕНИЙ
         socket.on('message', (data) => {
             addMessageToChat(data.nick, data.text, '#a29bfe');
             showSpeechBubble(data.nick, data.text, false); 
         });
 
         socket.on('privateMessage', (data) => {
-            // Если сообщение от меня, пишу "Шепот для X", иначе "Шепот от X"
             const isMe = (data.from === myNick);
             const displayNick = isMe ? `(Шепот для ${data.to})` : `(Шепот от ${data.from})`;
             
@@ -377,7 +358,6 @@
             history.innerHTML += `<p class="private-msg-text"><strong>${displayNick}:</strong> ${data.text}</p>`;
             history.scrollTop = history.scrollHeight;
 
-            // Показываем бабл над нужным аватаром
             const bubbleTarget = isMe ? myNick : data.from;
             showSpeechBubble(bubbleTarget, data.text, true); 
         });
