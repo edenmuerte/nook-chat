@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nook Chat</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -26,43 +27,13 @@
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
         .nick-label { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; white-space: nowrap; }
         
-        .speech-bubble {
-            position: absolute;
-            bottom: 100%; 
-            left: 50%;
-            transform: translateX(-50%);
-            background: #fff;
-            color: #000;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 13px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            margin-bottom: 10px;
-            max-width: 160px;
-            word-wrap: break-word;
-            white-space: normal;
-            z-index: 20;
-            animation: popIn 0.2s ease-out;
-        }
-        
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 6px;
-            border-style: solid;
-            border-color: #fff transparent transparent transparent;
-        }
+        .speech-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 8px 12px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-bottom: 10px; max-width: 160px; word-wrap: break-word; white-space: normal; z-index: 20; animation: popIn 0.2s ease-out; }
+        .speech-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #fff transparent transparent transparent; }
 
-        @keyframes popIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-        }
+        @keyframes popIn { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         
         #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
-        #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; }
+        #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; max-width: 90%; }
         .login-input { padding: 12px; margin-top: 15px; width: 90%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 14px; outline: none; box-sizing: border-box; }
         
         .file-input-wrapper { margin-top: 15px; text-align: left; width: 90%; margin-left: auto; margin-right: auto; }
@@ -73,6 +44,28 @@
         #login-button { padding: 12px 30px; margin-top: 25px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 90%; }
         #login-button:hover { background: #5a4bcf; }
         #login-button:disabled { background: #4e4e61; cursor: not-allowed; }
+
+        /* МЕДИАЗАПРОС ДЛЯ МОБИЛЬНЫХ ТЕЛЕФОНОВ */
+        @media (max-width: 768px) {
+            body { 
+                flex-direction: column-reverse; /* Меняем порядок: комната сверху, панель снизу */
+            }
+            #sidebar { 
+                width: 100%; 
+                flex: 1; /* Занимает ровно половину высоты */
+                border-right: none; 
+                border-top: 2px solid #3f3f4e; 
+            }
+            #room { 
+                flex: 1; /* Вторая половина высоты */
+            }
+            #login-box { 
+                padding: 25px 15px; /* Чуть компактнее отступы внутри формы */
+            }
+            #online-list {
+                max-height: 50px; /* Сжимаем список юзеров, чтобы отдать место тексту чата */
+            }
+        }
     </style>
 </head>
 <body>
@@ -171,8 +164,6 @@
                 localStorage.setItem('nook_avatar', myAvatarUrl);
                 
                 document.getElementById('overlay').style.display = 'none'; 
-                
-                // Передаем серверу наши данные и стартовую точку спавна (50x50)
                 socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: 50, y: 50 });
                 updateAvatar(myNick, myAvatarUrl, 50, 50);
             }
@@ -189,7 +180,6 @@
                 if (avatar.id !== 'avatar-' + myNick) avatar.remove();
             });
 
-            // Заново спавнимся по центру при смене комнаты
             socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: 50, y: 50 });
             updateAvatar(myNick, myAvatarUrl, 50, 50);
         }
@@ -208,16 +198,12 @@
             return data.secure_url;
         }
 
-        // 1. Получаем снимок комнаты при входе
         socket.on('roomState', (usersInRoom) => {
             usersInRoom.forEach(u => {
-                if (u.nick !== myNick) { // Рисуем всех, кроме себя
-                    updateAvatar(u.nick, u.avatar, u.x, u.y);
-                }
+                if (u.nick !== myNick) updateAvatar(u.nick, u.avatar, u.x, u.y);
             });
         });
 
-        // 2. Рисуем новичка, когда он заходит
         socket.on('userSpawned', (u) => {
             updateAvatar(u.nick, u.avatar, u.x, u.y);
         });
@@ -262,12 +248,7 @@
             let bubbleHtml = existingBubble ? existingBubble.outerHTML : '';
             let imgHtml = avatarUrl ? `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'" alt="prop">` : '';
 
-            avatarNode.innerHTML = `
-                ${bubbleHtml}
-                ${imgHtml}
-                <div class="nick-label">${nick}</div>
-            `;
-
+            avatarNode.innerHTML = `${bubbleHtml}${imgHtml}<div class="nick-label">${nick}</div>`;
             avatarNode.style.left = `calc(${x}% - 60px)`; 
             avatarNode.style.top = `calc(${y}% - 60px)`;
         }
