@@ -11,10 +11,9 @@ app.get('/', (req, res) => {
   res.send('Сервер Nook Chat успешно запущен и работает!');
 });
 
-// Хранилище: ID сокета -> { nick: 'Имя', room: 'ID_комнаты' }
+// Хранилище теперь помнит всё: ID сокета -> { nick, room, avatar, x, y }
 const users = {};
 
-// Вспомогательная функция для обновления списка онлайна в конкретной комнате
 function sendOnlineList(room) {
   const usersInRoom = Object.values(users)
     .filter(u => u.room === room)
@@ -25,39 +24,46 @@ function sendOnlineList(room) {
 io.on('connection', (socket) => {
   console.log('Новый коннект!');
 
-  // Когда пользователь заходит или меняет комнату
-  socket.on('joinRoom', ({ nick, room }) => {
-    // Если пользователь уже был в другой комнате, выходим из неё
+  socket.on('joinRoom', ({ nick, room, avatar, x, y }) => {
+    // Если был в другой комнате - выходим
     if (users[socket.id] && users[socket.id].room) {
       const oldRoom = users[socket.id].room;
       socket.leave(oldRoom);
-      sendOnlineList(oldRoom); // Обновляем список онлайна там, откуда он ушел
-      io.to(oldRoom).emit('userLeft', nick); // Говорим старой комнате удалить его аватарку
+      sendOnlineList(oldRoom);
+      io.to(oldRoom).emit('userLeft', nick);
     }
 
-    // Записываем новые данные и присоединяем к новой комнате
-    users[socket.id] = { nick, room };
+    // Запоминаем ВСЮ информацию (если координат нет, ставим центр 50x50)
+    users[socket.id] = { nick, room, avatar, x: x || 50, y: y || 50 };
     socket.join(room);
 
-    // Обновляем список онлайна в новой комнате
     sendOnlineList(room);
+
+    // 1. Отправляем НОВИЧКУ снимок всех, кто уже стоит в этой комнате
+    const usersInRoom = Object.values(users).filter(u => u.room === room);
+    socket.emit('roomState', usersInRoom);
+
+    // 2. Говорим СТАРИЧКАМ в комнате, что появился новичок, чтобы они его отрисовали
+    socket.to(room).emit('userSpawned', users[socket.id]);
   });
 
-  // Рассылаем сообщения ТОЛЬКО в текущую комнату пользователя
   socket.on('chatMessage', (data) => {
     if (users[socket.id]) {
       socket.to(users[socket.id].room).emit('message', data);
     }
   });
 
-  // Рассылаем координаты ТОЛЬКО в текущую комнату
   socket.on('move', (data) => {
     if (users[socket.id]) {
+      // Обновляем координаты в памяти сервера, чтобы новые люди видели актуальную позицию
+      users[socket.id].x = data.x;
+      users[socket.id].y = data.y;
+      users[socket.id].avatar = data.avatar;
+      
       socket.to(users[socket.id].room).emit('move', data);
     }
   });
 
-  // Когда пользователь закрывает вкладку
   socket.on('disconnect', () => {
     if (users[socket.id]) {
       const { nick, room } = users[socket.id];
