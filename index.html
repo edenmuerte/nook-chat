@@ -2,8 +2,15 @@
 <html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Nook Chat</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1e1e24">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1041/1041916.png">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -50,7 +57,28 @@
             box-sizing: border-box;
         }
 
-        body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text-main); height: 100vh; overflow: hidden; background: #000; transition: color var(--transition); }
+        /* МОБИЛЬНЫЕ УЛУЧШЕНИЯ */
+        body { 
+            margin: 0; 
+            font-family: 'Inter', sans-serif; 
+            color: var(--text-main); 
+            height: 100dvh; /* dynamic viewport для iOS */
+            overflow: hidden; 
+            background: #000; 
+            transition: color var(--transition);
+            
+            /* Запрещаем pull-to-refresh и случайное выделение текста */
+            overscroll-behavior-y: none;
+            -webkit-user-select: none;
+            user-select: none;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Разрешаем выделять текст только там, где это нужно */
+        #chat-history, #chat-input, .login-input {
+            -webkit-user-select: auto;
+            user-select: auto;
+        }
         
         /* Пространство комнаты на весь экран */
         #room { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
@@ -200,8 +228,8 @@
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; border-right: none; }
-            #room { position: relative; height: 40vh; }
-            #sidebar { position: relative; height: 60vh; }
+            #room { position: relative; height: 40dvh; }
+            #sidebar { position: relative; height: 60dvh; }
             #login-box { padding: 30px 20px; }
             #online-list { max-height: 60px; }
         }
@@ -693,6 +721,15 @@
             const html = `<p class="system-msg-text"><span class="msg-time">[${time}]</span> • ${data.text}</p>`;
             appendToHistory(html);
         });
+
+        // РЕГИСТРАЦИЯ SERVICE WORKER ДЛЯ PWA (МОБИЛЬНОГО ПРИЛОЖЕНИЯ)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW зарегистрирован!', reg))
+                    .catch(err => console.error('Ошибка регистрации SW', err));
+            });
+        }
     </script>
 </body>
 </html>
