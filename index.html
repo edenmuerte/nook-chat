@@ -45,22 +45,27 @@
             --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
         }
 
-        /* ИЗМЕНЕННАЯ БАЗОВАЯ РАЗМЕТКА ДЛЯ ГЛАССМОРФИЗМА */
+        /* ГЛОБАЛЬНЫЙ СБРОС ДЛЯ ПИКСЕЛЬ-ПЕРФЕКТ ВЕРСТКИ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text-main); height: 100vh; overflow: hidden; background: #000; transition: color var(--transition); }
         
-        /* Комната теперь на весь экран на заднем фоне */
+        /* Пространство комнаты на весь экран */
         #room { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
 
-        /* Сайдбар висит поверх комнаты с эффектом стекла */
+        /* Парящий сайдбар с честным глассморфизмом */
         #sidebar { position: absolute; top: 0; left: 0; bottom: 0; width: 320px; background: var(--bg-sidebar); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; box-shadow: 4px 0 24px rgba(0,0,0,0.1); transition: background var(--transition), border-color var(--transition); }
         
-        /* ШАПКА И СЕЛЕКТ КОМНАТ */
-        #room-selector { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
+        /* ИСПРАВЛЕННАЯ ШАПКА КОНТЕЙНЕРА */
+        #room-selector { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; }
         
-        /* ИСПРАВЛЕННЫЙ СЕЛЕКТ (КАСТОМНАЯ СТРЕЛКА И ПАДДИНГИ) */
         #room-select { 
             flex: 1; 
-            padding: 10px 40px 10px 14px; /* Место под стрелку справа */
+            min-width: 0; 
+            text-overflow: ellipsis;
+            padding: 10px 30px 10px 12px; 
             background-color: var(--bg-input); 
             color: var(--text-main); 
             border: 1px solid var(--border-color); 
@@ -69,22 +74,36 @@
             cursor: pointer; 
             font-family: 'Inter', sans-serif; 
             font-weight: 500;
-            appearance: none; /* Убиваем стандартную стрелку браузера */
+            appearance: none; 
             -webkit-appearance: none;
-            /* Рисуем свою аккуратную SVG-стрелочку */
             background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 12px center;
+            background-position: right 10px center;
             background-size: 16px;
             transition: var(--transition);
         }
         #room-select:focus { border-color: var(--accent); }
         
-        /* Немного причешем выпадающий список опций (насколько позволяет браузер) */
         #room-select option { background-color: #2b2b36; color: #fff; }
         [data-theme="light"] #room-select option { background-color: #fff; color: #000; }
 
-        .icon-btn { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 0 14px; border-radius: var(--radius-md); cursor: pointer; font-size: 16px; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+        /* ЖЕСТКИЕ КВАДРАТНЫЕ КНОПКИ ДЛЯ ИСКЛЮЧЕНИЯ ДЕФОРМАЦИИ */
+        .icon-btn { 
+            flex-shrink: 0; 
+            width: 38px; 
+            height: 38px; 
+            padding: 0; 
+            background: var(--bg-input); 
+            color: var(--text-main); 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-md); 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: var(--transition); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
         .icon-btn:hover { background: var(--border-color); }
         .icon-btn.danger { color: #ff4757; }
         .icon-btn.danger:hover { background: rgba(255, 71, 87, 0.1); border-color: rgba(255, 71, 87, 0.2); }
@@ -97,13 +116,17 @@
         .change-avatar-label:hover { background: var(--bg-input); color: var(--text-main); }
         #change-avatar-input { display: none; }
 
-        /* ИСПРАВЛЕННЫЙ СПИСОК ОНЛАЙН (КРАСИВЫЕ БЕЙДЖИ) */
+        /* ИСПРАВЛЕННЫЕ ИДЕАЛЬНО ВЫРОВНЕННЫЕ БЕЙДЖИ ОНЛАЙНА */
         #online-header { padding: 12px 16px; font-weight: 600; text-align: center; font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
         #online-list { padding: 0 16px 12px; border-bottom: 1px solid var(--border-color); min-height: 40px; max-height: 100px; overflow-y: auto; font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px; }
         
         .online-user-item { 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
             background: var(--bg-panel); 
-            padding: 6px 14px; 
+            padding: 8px 14px; 
             border-radius: 20px; 
             cursor: pointer; 
             transition: var(--transition); 
@@ -113,9 +136,9 @@
         }
         .online-user-item:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 
-        /* ИСТОРИЯ ЧАТА */
-        #chat-history { flex: 1; padding: 16px; overflow-y: auto; font-size: 14px; scroll-behavior: smooth; display: flex; flex-direction: column; gap: 8px; }
-        #chat-history p { margin: 0; line-height: 1.5; overflow-wrap: break-word; padding: 8px 12px; border-radius: var(--radius-md); background: transparent; transition: background var(--transition); }
+        /* КОМПАКТНАЯ ИНФОРМАТИВНАЯ ИСТОРИЯ ЧАТА */
+        #chat-history { flex: 1; padding: 16px; overflow-y: auto; font-size: 14px; scroll-behavior: smooth; display: flex; flex-direction: column; gap: 2px; }
+        #chat-history p { margin: 0; line-height: 1.4; overflow-wrap: break-word; padding: 4px 10px; border-radius: var(--radius-sm); background: transparent; transition: background var(--transition); }
         #chat-history p:hover { background: var(--bg-input); }
         
         .msg-time { color: var(--text-muted); font-size: 11px; margin-right: 8px; font-family: monospace; opacity: 0.7; }
@@ -123,7 +146,7 @@
 
         .private-msg-text { color: var(--accent); font-style: italic; border-left: 3px solid var(--accent); padding-left: 12px !important; background: var(--private-bg) !important; border-radius: 0 var(--radius-md) var(--radius-md) 0 !important; }
 
-        /* ВВОД ТЕКСТА */
+        /* ЗОНА ВВОДА */
         #chat-input-area { display: flex; flex-direction: column; padding: 16px; border-top: 1px solid var(--border-color); gap: 8px; background: rgba(0,0,0,0.02); }
         
         #private-target-badge { display: none; background: var(--accent); color: #fff; padding: 4px 12px; font-size: 12px; font-weight: 600; border-radius: 20px; cursor: pointer; align-self: flex-start; transition: var(--transition); box-shadow: var(--shadow-sm); }
@@ -134,7 +157,7 @@
         #chat-input { padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-panel); color: var(--text-main); outline: none; font-family: 'Inter', sans-serif; font-size: 14px; transition: var(--transition); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         #chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1); }
         
-        /* АВАТАРЫ И БАБЛЫ В КОМНАТЕ */
+        /* ПЕРСОНАЖИ И БАБЛЫ */
         .avatar-container { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: top 0.4s ease-out, left 0.4s ease-out; pointer-events: none; width: 120px; }
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.4)); transition: transform 0.2s; }
         .avatar-container:hover .avatar-img { transform: scale(1.05); }
@@ -146,7 +169,7 @@
 
         @keyframes popIn { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         
-        /* ОКНО АВТОРИЗАЦИИ */
+        /* МОДАЛЬНОЕ ОКНО */
         #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s; }
         #login-box { background: var(--bg-panel); padding: 40px; border-radius: var(--radius-lg); text-align: center; box-shadow: var(--shadow-lg); width: 340px; max-width: 90%; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         
@@ -170,7 +193,6 @@
 
         #error-msg { color: #ff4757; font-size: 13px; margin-top: 16px; font-weight: 500; display: none; background: rgba(255, 71, 87, 0.1); padding: 10px; border-radius: var(--radius-sm); }
 
-        /* АККУРАТНЫЙ СКРОЛЛБАР */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(160, 160, 171, 0.3); border-radius: 10px; }
@@ -178,7 +200,6 @@
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; border-right: none; }
-            /* На мобилках комната уходит под сайдбар полностью, поэтому временно отключим абсолютное позиционирование для мобилок */
             #room { position: relative; height: 40vh; }
             #sidebar { position: relative; height: 60vh; }
             #login-box { padding: 30px 20px; }
@@ -549,8 +570,6 @@
 
         roomDiv.addEventListener('click', (e) => {
             if (!myNick) return; 
-            // Клик под сайдбаром не сработает физически, так как сайдбар перекрывает комнату.
-            // Поэтому e.clientX всегда будет правильным (мы кликаем только по видимой части комнаты).
             const rect = roomDiv.getBoundingClientRect();
             myX = ((e.clientX - rect.left) / rect.width) * 100;
             myY = ((e.clientY - rect.top) / rect.height) * 100;
