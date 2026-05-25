@@ -181,28 +181,28 @@
         // Делаем звуки тише, чтобы не пугали
         Object.values(sfx).forEach(audio => audio.volume = 0.4);
 
-        // Отслеживаем, открыта ли вкладка
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                isTabActive = false;
-            } else {
-                isTabActive = true;
-                unreadCount = 0;
-                document.title = originalTitle;
-            }
+// --- ЛОГИКА УВЕДОМЛЕНИЙ В ФОНЕ (ФОКУС ОКНА И ЗВУКИ) ---
+        let unreadCount = 0;
+        const originalTitle = 'Nook Chat';
+
+        // Когда окно снова становится активным (мы кликнули по нему)
+        window.addEventListener('focus', () => {
+            unreadCount = 0;
+            document.title = originalTitle;
         });
 
         // Функция воспроизведения звука
         function playSound(type) {
-            // Играем звук только если вкладка скрыта
-            if (!isTabActive && sfx[type]) {
-                sfx[type].play().catch(e => console.log('Автовоспроизведение заблокировано браузером', e));
+            // Играем звук, если окно НЕ в фокусе (мы в другой вкладке или другом приложении)
+            if (!document.hasFocus() && sfx[type]) {
+                sfx[type].currentTime = 0; // Сбрасываем звук на начало, чтобы он не "зажевывался"
+                sfx[type].play().catch(e => console.log('Браузер заблокировал звук (кликните по экрану хотя бы раз):', e));
             }
         }
 
         // Функция обновления заголовка вкладки
         function notifyBackground(isPrivate = false) {
-            if (!isTabActive) {
+            if (!document.hasFocus()) {
                 unreadCount++;
                 const icon = isPrivate ? '🔒' : '💬';
                 document.title = `(${unreadCount}) ${icon} Новое сообщение!`;
