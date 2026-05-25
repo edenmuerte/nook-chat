@@ -13,8 +13,14 @@ app.get('/', (req, res) => {
   res.send('Сервер Nook Chat успешно запущен и работает!');
 });
 
+// Логика чата
 io.on('connection', (socket) => {
   console.log('Новый пользователь зашел в Nook!');
+
+  // Когда кто-то пишет сообщение, пересылаем его всем остальным
+  socket.on('chatMessage', (data) => {
+    socket.broadcast.emit('message', data);
+  });
 
   socket.on('disconnect', () => {
     console.log('Пользователь покинул Nook');
