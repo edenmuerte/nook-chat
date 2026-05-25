@@ -6,10 +6,9 @@
     <title>Nook Chat</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        /* ПРИМЕНЯЕМ ШРИФТ КО ВСЕМУ ИНТЕРФЕЙСУ */
         body { margin: 0; font-family: 'Inter', sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
         
@@ -53,7 +52,6 @@
         #private-target-badge { display: none; background: #d8a1ff; color: #2b2b36; padding: 4px 10px; font-size: 12px; font-weight: 700; border-radius: 4px; margin-bottom: 5px; cursor: pointer; align-self: flex-start; }
         #private-target-badge:hover { background: #e3b8ff; }
 
-        /* ИНДИКАТОР ПЕЧАТИ */
         #typing-indicator { color: #a29bfe; font-size: 11px; font-style: italic; min-height: 16px; margin-bottom: 4px; transition: opacity 0.2s; opacity: 0; }
 
         #chat-input { padding: 12px; border: none; border-radius: 6px; background: #1e1e24; color: #fff; outline: none; font-family: 'Inter', sans-serif; font-size: 14px; }
@@ -162,11 +160,55 @@
         let myX = 50;
         let myY = 50;
 
-        // ПЕРЕМЕННЫЕ ДЛЯ ОТСЛЕЖИВАНИЯ ПЕЧАТИ
         let typingTimer;
-        const TYPING_TIMER_LENGTH = 1500; // 1.5 секунды
+        const TYPING_TIMER_LENGTH = 1500;
         let amITyping = false;
-        const typingUsers = new Set(); // Кто сейчас печатает
+        const typingUsers = new Set(); 
+
+        // --- ЛОГИКА УВЕДОМЛЕНИЙ В ФОНЕ (ВКЛАДКИ И ЗВУКИ) ---
+        let isTabActive = true;
+        let unreadCount = 0;
+        const originalTitle = 'Nook Chat';
+
+        // Набор аккуратных звуков
+        const sfx = {
+            message: new Audio('https://actions.google.com/sounds/v1/water/water_drop.ogg'), // Легкая капля
+            private: new Audio('https://actions.google.com/sounds/v1/communications/incoming_text_ping.ogg'), // Звонкий пинг
+            enter: new Audio('https://actions.google.com/sounds/v1/doors/wood_door_open.ogg'), // Дверь открылась
+            leave: new Audio('https://actions.google.com/sounds/v1/doors/wood_door_close.ogg')  // Дверь закрылась
+        };
+
+        // Делаем звуки тише, чтобы не пугали
+        Object.values(sfx).forEach(audio => audio.volume = 0.4);
+
+        // Отслеживаем, открыта ли вкладка
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                isTabActive = false;
+            } else {
+                isTabActive = true;
+                unreadCount = 0;
+                document.title = originalTitle;
+            }
+        });
+
+        // Функция воспроизведения звука
+        function playSound(type) {
+            // Играем звук только если вкладка скрыта
+            if (!isTabActive && sfx[type]) {
+                sfx[type].play().catch(e => console.log('Автовоспроизведение заблокировано браузером', e));
+            }
+        }
+
+        // Функция обновления заголовка вкладки
+        function notifyBackground(isPrivate = false) {
+            if (!isTabActive) {
+                unreadCount++;
+                const icon = isPrivate ? '🔒' : '💬';
+                document.title = `(${unreadCount}) ${icon} Новое сообщение!`;
+            }
+        }
+        // --------------------------------------------------
 
         const roomDiv = document.getElementById('room');
         const chatInput = document.getElementById('chat-input');
@@ -179,7 +221,6 @@
         };
         roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
 
-        // ЛОГИКА ОТПРАВКИ СООБЩЕНИЯ ПО ENTER
         chatInput.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -187,7 +228,6 @@
             }
         });
 
-        // ЛОГИКА ОТСЛЕЖИВАНИЯ ПЕЧАТИ (INPUT)
         chatInput.addEventListener('input', () => {
             if (!amITyping) {
                 amITyping = true;
@@ -200,7 +240,6 @@
             }, TYPING_TIMER_LENGTH);
         });
 
-        // ПРИЕМ ИНФОРМАЦИИ О ТОМ, ЧТО КТО-ТО ПЕЧАТАЕТ
         socket.on('userTyping', (data) => {
             if (data.isTyping) {
                 typingUsers.add(data.nick);
@@ -380,7 +419,6 @@
             const avatars = document.querySelectorAll('.avatar-container');
             avatars.forEach(avatar => { if (avatar.id !== 'avatar-' + myNick) avatar.remove(); });
             
-            // Очищаем индикатор печати при смене комнаты
             typingUsers.clear();
             updateTypingDisplay();
 
@@ -393,17 +431,22 @@
             usersInRoom.forEach(u => { if (u.nick !== myNick) updateAvatar(u.nick, u.avatar, u.x, u.y); });
         });
 
-        socket.on('userSpawned', (u) => { updateAvatar(u.nick, u.avatar, u.x, u.y); });
+        // ВОСПРОИЗВОДИМ ЗВУК ПРИ ВХОДЕ (если скрыта вкладка)
+        socket.on('userSpawned', (u) => { 
+            updateAvatar(u.nick, u.avatar, u.x, u.y); 
+            playSound('enter');
+        });
         
+        // ВОСПРОИЗВОДИМ ЗВУК ПРИ ВЫХОДЕ (если скрыта вкладка)
         socket.on('userLeft', (nick) => {
             const avatarNode = document.getElementById('avatar-' + nick);
             if (avatarNode) avatarNode.remove();
             
-            // Удаляем юзера из печатающих, если он вышел
             if (typingUsers.has(nick)) {
                 typingUsers.delete(nick);
                 updateTypingDisplay();
             }
+            playSound('leave');
         });
 
         socket.on('updateOnlineList', (users) => {
@@ -496,7 +539,6 @@
                 }
                 chatInput.value = '';
                 
-                // Сбрасываем статус печати сразу после отправки
                 amITyping = false;
                 socket.emit('typing', false);
                 clearTimeout(typingTimer);
@@ -510,9 +552,12 @@
             appendToHistory(html);
         }
 
+        // ОБРАБОТКА ВХОДЯЩИХ СООБЩЕНИЙ СО ЗВУКОМ И УВЕДОМЛЕНИЯМИ
         socket.on('message', (data) => {
             addMessageToChat(data.nick, data.text, '#a29bfe');
             showSpeechBubble(data.nick, data.text, false); 
+            playSound('message');
+            notifyBackground(false);
         });
 
         socket.on('privateMessage', (data) => {
@@ -526,6 +571,12 @@
 
             const bubbleTarget = isMe ? myNick : data.from;
             showSpeechBubble(bubbleTarget, data.text, true); 
+            
+            // Если сообщение пришло нам (а не мы сами его отправили), проигрываем звук
+            if (!isMe) {
+                playSound('private');
+                notifyBackground(true);
+            }
         });
 
         socket.on('systemMessage', (data) => {
