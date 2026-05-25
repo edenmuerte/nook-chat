@@ -8,9 +8,12 @@
         body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
         
-        /* Стили для блока онлайна */
-        #online-header { padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 14px; }
-        #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 50px; max-height: 150px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
+        /* Меню комнат */
+        #room-selector { padding: 10px; background: #1e1e24; border-bottom: 1px solid #3f3f4e; }
+        #room-select { width: 100%; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
+        
+        #online-header { padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 13px; }
+        #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 40px; max-height: 120px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
         .online-user-item { margin-bottom: 5px; }
 
         #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
@@ -18,7 +21,7 @@
         #chat-input-area { display: flex; padding: 10px; background: #23232c; }
         #chat-input { flex: 1; padding: 10px; border: none; border-radius: 4px; background: #1e1e24; color: #fff; outline: none; }
         
-        #room { flex: 1; position: relative; background: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop') center/cover; cursor: pointer; overflow: hidden; }
+        #room { flex: 1; position: relative; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
         
         .avatar-container { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: top 0.4s ease-out, left 0.4s ease-out; pointer-events: none; width: 120px; }
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
@@ -55,10 +58,18 @@
     </div>
 
     <div id="sidebar">
+        <div id="room-selector">
+            <select id="room-select" onchange="changeRoom()">
+                <option value="main">Главная комната</option>
+                <option value="sicily">Сицилийский берег</option>
+                <option value="garden">Летний сад</option>
+            </select>
+        </div>
+
         <div id="online-header">В комнате: <span id="online-count">0</span></div>
         <div id="online-list"></div>
 
-        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36;">Чат</div>
+        <div style="padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36; font-size: 13px;">Чат</div>
         <div id="chat-history"></div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Написать сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()">
@@ -71,7 +82,18 @@
         const socket = io('https://nook-chat.onrender.com'); 
         let myNick = '';
         let myAvatarUrl = '';
-        const room = document.getElementById('room');
+        let currentRoom = 'main';
+        const roomDiv = document.getElementById('room');
+
+        // База картинок для комнат
+        const roomBackgrounds = {
+            'main': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop',
+            'sicily': 'https://images.unsplash.com/photo-1533588145244-6330ce148d21?q=80&w=2070&auto=format&fit=crop',
+            'garden': 'https://images.unsplash.com/photo-1558350172-2775a2f582f3?q=80&w=2070&auto=format&fit=crop'
+        };
+
+        // Устанавливаем фон по умолчанию
+        roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
 
         function displayFileName() {
             const input = document.getElementById('avatar-file-input');
@@ -93,7 +115,6 @@
                 if (fileInput.files.length > 0) {
                     loginBtn.innerText = 'Загрузка аватара...';
                     loginBtn.disabled = true;
-                    
                     try {
                         myAvatarUrl = await uploadToCloudinary(fileInput.files[0]);
                     } catch (error) {
@@ -103,24 +124,38 @@
                 }
                 
                 document.getElementById('overlay').style.display = 'none'; 
+                
+                // Сообщаем серверу, в какую комнату входим
+                socket.emit('joinRoom', { nick: myNick, room: currentRoom });
                 updateAvatar(myNick, myAvatarUrl, 50, 50);
-
-                // СООБЩАЕМ СЕРВЕРУ, ЧТО МЫ ВОШЛИ, ЧТОБЫ ПОПАСТЬ В СПИСОК
-                socket.emit('userJoined', myNick);
             }
         }
 
-        // ОБРАБОТЧИК СПИСКА ОНЛАЙНА ОТ СЕРВЕРА
-        socket.on('updateOnlineList', (users) => {
-            document.getElementById('online-count').innerText = users.length;
-            const listDiv = document.getElementById('online-list');
-            listDiv.innerHTML = users.map(user => `<div class="online-user-item">• ${user}</div>`).join('');
-        });
+        function changeRoom() {
+            const select = document.getElementById('room-select');
+            currentRoom = select.value;
+
+            // 1. Меняем фон
+            roomDiv.style.backgroundImage = `url('${roomBackgrounds[currentRoom]}')`;
+            
+            // 2. Очищаем чат
+            document.getElementById('chat-history').innerHTML = '<p style="color: #aaa; font-style: italic; text-align: center;">Вы перешли в новую комнату</p>';
+            
+            // 3. Удаляем все чужие аватарки с экрана (оставляем только свою)
+            const avatars = document.querySelectorAll('.avatar-container');
+            avatars.forEach(avatar => {
+                if (avatar.id !== 'avatar-' + myNick) {
+                    avatar.remove();
+                }
+            });
+
+            // 4. Сообщаем серверу
+            socket.emit('joinRoom', { nick: myNick, room: currentRoom });
+        }
 
         async function uploadToCloudinary(file) {
-            // ВСТАВЬ СВОИ КЛЮЧИ СЮДА ПЕРЕД СОХРАНЕНИЕМ!
-            const CLOUD_NAME = 'dzpqigdfz'; 
-            const UPLOAD_PRESET = 'ml_default'; 
+            const CLOUD_NAME = 'dzpqigdfz'; // <-- ВСТАВИТЬ КЛЮЧ
+            const UPLOAD_PRESET = 'ml_default'; // <-- ВСТАВИТЬ КЛЮЧ
             
             const formData = new FormData();
             formData.append('file', file);
@@ -130,16 +165,28 @@
                 method: 'POST',
                 body: formData
             });
-            
             if (!response.ok) throw new Error('Cloudinary upload failed');
-            
             const data = await response.json();
             return data.secure_url;
         }
 
-        room.addEventListener('click', (e) => {
+        // Удаление аватарки, когда человек выходит из комнаты или закрывает браузер
+        socket.on('userLeft', (nick) => {
+            const avatarNode = document.getElementById('avatar-' + nick);
+            if (avatarNode) {
+                avatarNode.remove();
+            }
+        });
+
+        socket.on('updateOnlineList', (users) => {
+            document.getElementById('online-count').innerText = users.length;
+            const listDiv = document.getElementById('online-list');
+            listDiv.innerHTML = users.map(user => `<div class="online-user-item">• ${user}</div>`).join('');
+        });
+
+        roomDiv.addEventListener('click', (e) => {
             if (!myNick) return; 
-            const rect = room.getBoundingClientRect();
+            const rect = roomDiv.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
 
@@ -159,7 +206,7 @@
                 avatarNode = document.createElement('div');
                 avatarNode.id = avatarId;
                 avatarNode.className = 'avatar-container';
-                room.appendChild(avatarNode);
+                roomDiv.appendChild(avatarNode);
             }
 
             let imgHtml = '';
@@ -167,11 +214,7 @@
                 imgHtml = `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'" alt="prop">`;
             }
 
-            avatarNode.innerHTML = `
-                ${imgHtml}
-                <div class="nick-label">${nick}</div>
-            `;
-
+            avatarNode.innerHTML = `${imgHtml}<div class="nick-label">${nick}</div>`;
             avatarNode.style.left = `calc(${x}% - 60px)`; 
             avatarNode.style.top = `calc(${y}% - 60px)`;
         }
