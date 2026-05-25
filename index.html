@@ -127,14 +127,11 @@
 
         roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
 
-        // ПРОВЕРКА ЛОКАЛСТОРАДЖА ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
         window.addEventListener('DOMContentLoaded', () => {
             const savedNick = localStorage.getItem('nook_nick');
             const savedAvatar = localStorage.getItem('nook_avatar');
 
-            if (savedNick) {
-                document.getElementById('nickname-input').value = savedNick;
-            }
+            if (savedNick) document.getElementById('nickname-input').value = savedNick;
             if (savedAvatar) {
                 myAvatarUrl = savedAvatar;
                 const label = document.getElementById('file-label');
@@ -160,24 +157,23 @@
             if (nickInput.value.trim().length > 0) {
                 myNick = nickInput.value.trim();
                 
-                // Если выбран НОВЫЙ файл, загружаем его и обновляем ссылку
                 if (fileInput.files.length > 0) {
                     loginBtn.innerText = 'Загрузка аватара...';
                     loginBtn.disabled = true;
                     try {
                         myAvatarUrl = await uploadToCloudinary(fileInput.files[0]);
                     } catch (error) {
-                        alert('Не удалось загрузить картинку. Войдем без нее.');
-                        console.error(error);
+                        alert('Не удалось загрузить картинку.');
                     }
                 }
                 
-                // ЗАПИСЫВАЕМ ДАННЫЕ В LOCALSTORAGE ДЛЯ СЛЕДУЮЩЕГО РАЗА
                 localStorage.setItem('nook_nick', myNick);
                 localStorage.setItem('nook_avatar', myAvatarUrl);
                 
                 document.getElementById('overlay').style.display = 'none'; 
-                socket.emit('joinRoom', { nick: myNick, room: currentRoom });
+                
+                // Передаем серверу наши данные и стартовую точку спавна (50x50)
+                socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: 50, y: 50 });
                 updateAvatar(myNick, myAvatarUrl, 50, 50);
             }
         }
@@ -193,7 +189,9 @@
                 if (avatar.id !== 'avatar-' + myNick) avatar.remove();
             });
 
-            socket.emit('joinRoom', { nick: myNick, room: currentRoom });
+            // Заново спавнимся по центру при смене комнаты
+            socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: 50, y: 50 });
+            updateAvatar(myNick, myAvatarUrl, 50, 50);
         }
 
         async function uploadToCloudinary(file) {
@@ -204,14 +202,25 @@
             formData.append('file', file);
             formData.append('upload_preset', UPLOAD_PRESET);
             
-            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
             if (!response.ok) throw new Error('Cloudinary upload failed');
             const data = await response.json();
             return data.secure_url;
         }
+
+        // 1. Получаем снимок комнаты при входе
+        socket.on('roomState', (usersInRoom) => {
+            usersInRoom.forEach(u => {
+                if (u.nick !== myNick) { // Рисуем всех, кроме себя
+                    updateAvatar(u.nick, u.avatar, u.x, u.y);
+                }
+            });
+        });
+
+        // 2. Рисуем новичка, когда он заходит
+        socket.on('userSpawned', (u) => {
+            updateAvatar(u.nick, u.avatar, u.x, u.y);
+        });
 
         socket.on('userLeft', (nick) => {
             const avatarNode = document.getElementById('avatar-' + nick);
@@ -295,9 +304,6 @@
 
         socket.on('message', (data) => {
             addMessageToChat(data.nick, data.text, '#a29bfe');
-            if (!document.getElementById('avatar-' + data.nick)) {
-                updateAvatar(data.nick, data.avatar, 50, 50);
-            }
             showSpeechBubble(data.nick, data.text); 
         });
 
