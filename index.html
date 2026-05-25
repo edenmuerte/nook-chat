@@ -7,6 +7,12 @@
     <style>
         body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
+        
+        /* Стили для блока онлайна */
+        #online-header { padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 14px; }
+        #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 50px; max-height: 150px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
+        .online-user-item { margin-bottom: 5px; }
+
         #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
         #chat-history p { margin: 5px 0; line-height: 1.4; overflow-wrap: break-word; }
         #chat-input-area { display: flex; padding: 10px; background: #23232c; }
@@ -14,44 +20,18 @@
         
         #room { flex: 1; position: relative; background: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop') center/cover; cursor: pointer; overflow: hidden; }
         
-        .avatar-container { 
-            position: absolute; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            transition: top 0.4s ease-out, left 0.4s ease-out; 
-            pointer-events: none; 
-            width: 120px;
-        }
-        
-        .avatar-img {
-            max-width: 100px;
-            max-height: 120px;
-            object-fit: contain;
-            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5));
-        }
-        
-        .nick-label {
-            background: rgba(0,0,0,0.7); 
-            padding: 4px 10px; 
-            border-radius: 12px; 
-            font-size: 12px; 
-            font-weight: bold;
-            margin-top: 5px;
-            white-space: nowrap;
-        }
+        .avatar-container { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: top 0.4s ease-out, left 0.4s ease-out; pointer-events: none; width: 120px; }
+        .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
+        .nick-label { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; white-space: nowrap; }
         
         #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
         #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; }
-        
         .login-input { padding: 12px; margin-top: 15px; width: 90%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 14px; outline: none; box-sizing: border-box; }
         
-        /* Стилизация кнопки выбора файла */
         .file-input-wrapper { margin-top: 15px; text-align: left; width: 90%; margin-left: auto; margin-right: auto; }
         .file-input-label { display: block; padding: 10px; background: #3f3f4e; border-radius: 6px; text-align: center; cursor: pointer; font-size: 13px; transition: 0.2s; border: 1px dashed #6c5ce7; }
         .file-input-label:hover { background: #4e4e61; }
-        #avatar-file-input { display: none; } /* Прячем дефолтный некрасивый инпут */
+        #avatar-file-input { display: none; }
         
         #login-button { padding: 12px 30px; margin-top: 25px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 90%; }
         #login-button:hover { background: #5a4bcf; }
@@ -75,7 +55,10 @@
     </div>
 
     <div id="sidebar">
-        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center;">Текстовый чат</div>
+        <div id="online-header">В комнате: <span id="online-count">0</span></div>
+        <div id="online-list"></div>
+
+        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36;">Чат</div>
         <div id="chat-history"></div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Написать сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()">
@@ -90,7 +73,6 @@
         let myAvatarUrl = '';
         const room = document.getElementById('room');
 
-        // Отображение имени выбранного файла на кнопке
         function displayFileName() {
             const input = document.getElementById('avatar-file-input');
             const label = document.getElementById('file-label');
@@ -108,7 +90,6 @@
             if (nickInput.value.trim().length > 0) {
                 myNick = nickInput.value.trim();
                 
-                // Если пользователь выбрал файл, сначала загружаем его в облако
                 if (fileInput.files.length > 0) {
                     loginBtn.innerText = 'Загрузка аватара...';
                     loginBtn.disabled = true;
@@ -123,12 +104,21 @@
                 
                 document.getElementById('overlay').style.display = 'none'; 
                 updateAvatar(myNick, myAvatarUrl, 50, 50);
+
+                // СООБЩАЕМ СЕРВЕРУ, ЧТО МЫ ВОШЛИ, ЧТОБЫ ПОПАСТЬ В СПИСОК
+                socket.emit('userJoined', myNick);
             }
         }
 
-        // Функция отправки файла в Cloudinary через встроенный Fetch API
+        // ОБРАБОТЧИК СПИСКА ОНЛАЙНА ОТ СЕРВЕРА
+        socket.on('updateOnlineList', (users) => {
+            document.getElementById('online-count').innerText = users.length;
+            const listDiv = document.getElementById('online-list');
+            listDiv.innerHTML = users.map(user => `<div class="online-user-item">• ${user}</div>`).join('');
+        });
+
         async function uploadToCloudinary(file) {
-            // --- НАСТРОЙКА КЛЮЧЕЙ ТУТ ---
+            // ВСТАВЬ СВОИ КЛЮЧИ СЮДА ПЕРЕД СОХРАНЕНИЕМ!
             const CLOUD_NAME = 'dzpqigdfz'; 
             const UPLOAD_PRESET = 'ml_default'; 
             
@@ -144,12 +134,11 @@
             if (!response.ok) throw new Error('Cloudinary upload failed');
             
             const data = await response.json();
-            return data.secure_url; // Возвращает прямую ссылку на картинку в облаке
+            return data.secure_url;
         }
 
         room.addEventListener('click', (e) => {
             if (!myNick) return; 
-
             const rect = room.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
