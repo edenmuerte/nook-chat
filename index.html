@@ -9,11 +9,9 @@
         body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
         
-        /* Изменили селектор комнат, чтобы вместить кнопку логаута */
         #room-selector { padding: 10px; background: #1e1e24; border-bottom: 1px solid #3f3f4e; display: flex; gap: 10px; }
-        #room-select { flex: 1; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
+        #room-select { width: 100%; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
         
-        /* Стили для кнопки логаута */
         .logout-btn { background: #ff4757; color: white; border: none; padding: 0 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
         .logout-btn:hover { background: #ff6b81; }
 
@@ -26,6 +24,12 @@
         #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
         #chat-history p { margin: 5px 0; line-height: 1.4; overflow-wrap: break-word; }
         
+        /* Стиль для серой метки времени */
+        .msg-time { color: #7f8c8d; font-size: 11px; margin-right: 6px; font-family: monospace; }
+
+        /* Стиль для красивых системных логов */
+        .system-msg-text { color: #f1c40f; font-style: italic; font-size: 13px; }
+
         .private-msg-text {
             color: #d8a1ff; 
             font-style: italic;
@@ -145,6 +149,14 @@
         };
         roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
 
+        // Вспомогательная функция для генерации меток времени [ЧЧ:ММ]
+        function getTimestamp() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             const savedNick = localStorage.getItem('nook_nick');
             const savedPass = localStorage.getItem('nook_pass');
@@ -154,7 +166,6 @@
             }
         });
 
-        // НОВАЯ ФУНКЦИЯ ЛОГАУТА
         function logout() {
             localStorage.removeItem('nook_nick');
             localStorage.removeItem('nook_pass');
@@ -353,24 +364,28 @@
         socket.on('privateMessage', (data) => {
             const isMe = (data.from === myNick);
             const displayNick = isMe ? `(Шепот для ${data.to})` : `(Шепот от ${data.from})`;
+            const time = getTimestamp();
             
             const history = document.getElementById('chat-history');
-            history.innerHTML += `<p class="private-msg-text"><strong>${displayNick}:</strong> ${data.text}</p>`;
+            history.innerHTML += `<p class="private-msg-text"><span class="msg-time">[${time}]</span><strong>${displayNick}:</strong> ${data.text}</p>`;
             history.scrollTop = history.scrollHeight;
 
             const bubbleTarget = isMe ? myNick : data.from;
             showSpeechBubble(bubbleTarget, data.text, true); 
         });
 
+        // МОДЕРНИЗИРОВАННЫЙ ОБРАБОТЧИК СИСТЕМНЫХ СООБЩЕНИЙ С СОХРАНЕНИЕМ ВРЕМЕНИ
         socket.on('systemMessage', (data) => {
             const history = document.getElementById('chat-history');
-            history.innerHTML += `<p style="color:#ff7675; font-style:italic; font-size:12px;">Система: ${data.text}</p>`;
+            const time = getTimestamp();
+            history.innerHTML += `<p class="system-msg-text"><span class="msg-time">[${time}]</span> • ${data.text}</p>`;
             history.scrollTop = history.scrollHeight;
         });
 
         function addMessageToChat(nick, text, color) {
             const history = document.getElementById('chat-history');
-            history.innerHTML += `<p><strong style="color:${color}">${nick}:</strong> ${text}</p>`;
+            const time = getTimestamp();
+            history.innerHTML += `<p><span class="msg-time">[${time}]</span><strong style="color:${color}">${nick}:</strong> ${text}</p>`;
             history.scrollTop = history.scrollHeight;
         }
     </script>
