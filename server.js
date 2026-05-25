@@ -13,21 +13,32 @@ app.get('/', (req, res) => {
   res.send('Сервер Nook Chat успешно запущен и работает!');
 });
 
-io.on('connection', (socket) => {
-  console.log('Новый пользователь зашел в Nook!');
+// Хранилище онлайн-пользователей (Связка: ID сокета -> Никнейм)
+const onlineUsers = {};
 
-  // Пересылка текстовых сообщений
+io.on('connection', (socket) => {
+  console.log('Новый системный коннект!');
+
+  // Когда пользователь ввел ник и нажал "Войти"
+  socket.on('userJoined', (nick) => {
+    onlineUsers[socket.id] = nick; // Записываем в память сервера
+    io.emit('updateOnlineList', Object.values(onlineUsers)); // Рассылаем всем массив ников
+  });
+
   socket.on('chatMessage', (data) => {
     socket.broadcast.emit('message', data);
   });
 
-  // Пересылка координат перемещения
   socket.on('move', (data) => {
     socket.broadcast.emit('move', data);
   });
 
+  // Когда пользователь закрывает вкладку браузера
   socket.on('disconnect', () => {
-    console.log('Пользователь покинул Nook');
+    if (onlineUsers[socket.id]) {
+      delete onlineUsers[socket.id]; // Удаляем из памяти
+      io.emit('updateOnlineList', Object.values(onlineUsers)); // Обновляем список у оставшихся
+    }
   });
 });
 
