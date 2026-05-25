@@ -12,36 +12,57 @@
         #chat-input-area { display: flex; padding: 10px; background: #23232c; }
         #chat-input { flex: 1; padding: 10px; border: none; border-radius: 4px; background: #1e1e24; color: #fff; outline: none; }
         
-        /* Комната с фоном */
         #room { flex: 1; position: relative; background: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop') center/cover; cursor: pointer; overflow: hidden; }
         
-        /* Плавающий никнейм с плавной анимацией */
-        .avatar { 
+        /* Обновленный контейнер для аватарки и ника */
+        .avatar-container { 
             position: absolute; 
-            padding: 5px 12px; 
-            background: rgba(0,0,0,0.7); 
-            border-radius: 15px; 
-            font-size: 13px; 
-            font-weight: bold;
-            transition: top 0.5s ease-out, left 0.5s ease-out; /* Плавность движения */
-            pointer-events: none; /* Чтобы клик проходил сквозь аватарку на фон */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            transition: top 0.4s ease-out, left 0.4s ease-out; 
+            pointer-events: none; 
+            width: 120px; /* Фиксируем ширину для ровного центрирования клика */
         }
         
-        /* Окно входа */
+        /* Сама картинка персонажа */
+        .avatar-img {
+            max-width: 100px;
+            max-height: 120px;
+            object-fit: contain; /* Сохраняем пропорции */
+            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); /* Добавляем легкую тень персонажу */
+        }
+        
+        /* Плашка с ником под персонажем */
+        .nick-label {
+            background: rgba(0,0,0,0.7); 
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            font-weight: bold;
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+        
         #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
-        #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #nickname-input { padding: 12px; margin-top: 15px; width: 80%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 16px; outline: none; }
-        button { padding: 12px 30px; margin-top: 20px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        #login-box { background: #2b2b36; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; }
+        
+        /* Поля ввода на экране логина */
+        .login-input { padding: 12px; margin-top: 15px; width: 90%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 14px; outline: none; box-sizing: border-box; }
+        
+        button { padding: 12px 30px; margin-top: 25px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 90%; }
         button:hover { background: #5a4bcf; }
     </style>
 </head>
 <body>
     <div id="overlay">
         <div id="login-box">
-            <h2>Добро пожаловать в Nook</h2>
-            <input type="text" id="nickname-input" placeholder="Введи свой никнейм..." autofocus onkeypress="if(event.key === 'Enter') joinNook()">
+            <h2>Вход в Nook</h2>
+            <input type="text" id="nickname-input" class="login-input" placeholder="Твой никнейм..." autofocus>
+            <input type="text" id="avatar-input" class="login-input" placeholder="URL картинки (необязательно)..." onkeypress="if(event.key === 'Enter') joinNook()">
             <br>
-            <button onclick="joinNook()">Войти</button>
+            <button onclick="joinNook()">Войти в комнату</button>
         </div>
     </div>
 
@@ -58,62 +79,79 @@
     <script>
         const socket = io('https://nook-chat.onrender.com'); 
         let myNick = '';
+        let myAvatarUrl = '';
         const room = document.getElementById('room');
 
         function joinNook() {
-            const input = document.getElementById('nickname-input');
-            if (input.value.trim().length > 0) {
-                myNick = input.value.trim();
+            const nickInput = document.getElementById('nickname-input');
+            const avatarInput = document.getElementById('avatar-input');
+            
+            if (nickInput.value.trim().length > 0) {
+                myNick = nickInput.value.trim();
+                myAvatarUrl = avatarInput.value.trim();
+                
                 document.getElementById('overlay').style.display = 'none'; 
                 
-                // Ставим свой ник по центру при входе
-                updateAvatar(myNick, 50, 50);
+                // Спавнимся в центре
+                updateAvatar(myNick, myAvatarUrl, 50, 50);
             }
         }
 
-        // Логика перемещения по клику
         room.addEventListener('click', (e) => {
-            if (!myNick) return; // Если не вошел, игнорируем клики
+            if (!myNick) return; 
 
             const rect = room.getBoundingClientRect();
-            // Высчитываем проценты
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-            // Двигаем себя
-            updateAvatar(myNick, x, y);
+            updateAvatar(myNick, myAvatarUrl, x, y);
             
-            // Сообщаем серверу
-            socket.emit('move', { nick: myNick, x: x, y: y });
+            // Теперь отправляем и координаты, и ссылку на аватар
+            socket.emit('move', { nick: myNick, avatar: myAvatarUrl, x: x, y: y });
         });
 
-        // Слушаем чужие перемещения
+        // Чужие перемещения
         socket.on('move', (data) => {
-            updateAvatar(data.nick, data.x, data.y);
+            updateAvatar(data.nick, data.avatar, data.x, data.y);
         });
 
-        // Универсальная функция: создает аватар, если его нет, или двигает существующий
-        function updateAvatar(nick, x, y) {
+        // Функция отрисовки персонажа
+        function updateAvatar(nick, avatarUrl, x, y) {
             let avatarId = 'avatar-' + nick;
-            let avatar = document.getElementById(avatarId);
+            let avatarNode = document.getElementById(avatarId);
 
-            if (!avatar) {
-                avatar = document.createElement('div');
-                avatar.id = avatarId;
-                avatar.className = 'avatar';
-                avatar.innerText = nick;
-                room.appendChild(avatar);
+            // Если персонажа еще нет на экране — создаем
+            if (!avatarNode) {
+                avatarNode = document.createElement('div');
+                avatarNode.id = avatarId;
+                avatarNode.className = 'avatar-container';
+                room.appendChild(avatarNode);
             }
 
-            avatar.style.left = `calc(${x}% - 20px)`;
-            avatar.style.top = `calc(${y}% - 15px)`;
+            // Формируем внутренности (картинка + ник)
+            let imgHtml = '';
+            if (avatarUrl) {
+                // Если ссылка есть, добавляем тег <img>
+                imgHtml = `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'" alt="prop">`;
+            }
+
+            // Пересобираем HTML внутри контейнера
+            avatarNode.innerHTML = `
+                ${imgHtml}
+                <div class="nick-label">${nick}</div>
+            `;
+
+            // Центрируем по координатам клика (смещаем на половину ширины контейнера)
+            avatarNode.style.left = `calc(${x}% - 60px)`; 
+            avatarNode.style.top = `calc(${y}% - 60px)`;
         }
 
         function sendMessage() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
             if (msg) {
-                socket.emit('chatMessage', { nick: myNick, text: msg });
+                // Отправляем сообщение + нашу аватарку
+                socket.emit('chatMessage', { nick: myNick, avatar: myAvatarUrl, text: msg });
                 addMessageToChat(myNick, msg, '#6c5ce7');
                 input.value = '';
             }
@@ -121,9 +159,9 @@
 
         socket.on('message', (data) => {
             addMessageToChat(data.nick, data.text, '#a29bfe');
-            // Если кто-то написал в чат, но его аватарки еще нет (он не двигался), ставим его в центр
+            // Если кто-то написал, но его аватарки еще нет (он не двигался), ставим его в центр
             if (!document.getElementById('avatar-' + data.nick)) {
-                updateAvatar(data.nick, 50, 50);
+                updateAvatar(data.nick, data.avatar, 50, 50);
             }
         });
 
