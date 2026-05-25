@@ -21,13 +21,10 @@
         .online-user-item { margin-bottom: 5px; cursor: pointer; transition: color 0.2s; }
         .online-user-item:hover { color: #fff; }
 
-        #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
+        #chat-history { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; scroll-behavior: smooth; }
         #chat-history p { margin: 5px 0; line-height: 1.4; overflow-wrap: break-word; }
         
-        /* Стиль для серой метки времени */
         .msg-time { color: #7f8c8d; font-size: 11px; margin-right: 6px; font-family: monospace; }
-
-        /* Стиль для красивых системных логов */
         .system-msg-text { color: #f1c40f; font-style: italic; font-size: 13px; }
 
         .private-msg-text {
@@ -127,7 +124,7 @@
         <div id="chat-history"></div>
         <div id="chat-input-area">
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
-            <input type="text" id="chat-input" placeholder="Написать сообщение..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" onkeypress="if(event.key === 'Enter') sendMessage()">
         </div>
     </div>
     
@@ -149,7 +146,6 @@
         };
         roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
 
-        // Вспомогательная функция для генерации меток времени [ЧЧ:ММ]
         function getTimestamp() {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
@@ -270,7 +266,6 @@
             const select = document.getElementById('room-select');
             currentRoom = select.value;
             roomDiv.style.backgroundImage = `url('${roomBackgrounds[currentRoom]}')`;
-            document.getElementById('chat-history').innerHTML = '<p style="color: #aaa; font-style: italic; text-align: center;">Вы перешли в новую комнату</p>';
             
             const avatars = document.querySelectorAll('.avatar-container');
             avatars.forEach(avatar => { if (avatar.id !== 'avatar-' + myNick) avatar.remove(); });
@@ -323,6 +318,9 @@
             avatarNode.innerHTML = `${bubbleHtml}${imgHtml}<div class="nick-label">${nick}</div>`;
             avatarNode.style.left = `calc(${x}% - 60px)`; 
             avatarNode.style.top = `calc(${y}% - 60px)`;
+            
+            // Глубина сцены: чем ниже Y, тем выше z-index
+            avatarNode.style.zIndex = Math.floor(y * 10);
         }
 
         function showSpeechBubble(nick, text, isPrivate = false) {
@@ -341,9 +339,35 @@
             setTimeout(() => { if (bubble && bubble.parentNode) bubble.remove(); }, 5000);
         }
 
+        // --- НОВЫЕ ФУНКЦИИ ДЛЯ ЧАТА (Скролл и Линки) ---
+
+        function linkify(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, url => `<a href="${url}" target="_blank" style="color: #a29bfe; text-decoration: underline;">${url}</a>`);
+        }
+
+        // Централизованная функция добавления HTML в историю с умным скроллом
+        function appendToHistory(htmlString) {
+            const history = document.getElementById('chat-history');
+            // Если до низа чата осталось менее 50px, значит пользователь читает свежее
+            const isNearBottom = history.scrollHeight - history.scrollTop - history.clientHeight < 50;
+            
+            history.insertAdjacentHTML('beforeend', htmlString);
+            
+            if (isNearBottom) {
+                history.scrollTop = history.scrollHeight;
+            }
+        }
+
         function sendMessage() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
+            
+            if (msg.length > 500) {
+                alert('Сообщение слишком длинное!');
+                return;
+            }
+
             if (msg) {
                 if (privateTarget) {
                     socket.emit('privateMessage', { to: privateTarget, text: msg });
@@ -356,6 +380,13 @@
             }
         }
 
+        function addMessageToChat(nick, text, color) {
+            const time = getTimestamp();
+            const safeText = linkify(text);
+            const html = `<p><span class="msg-time">[${time}]</span><strong style="color:${color}">${nick}:</strong> ${safeText}</p>`;
+            appendToHistory(html);
+        }
+
         socket.on('message', (data) => {
             addMessageToChat(data.nick, data.text, '#a29bfe');
             showSpeechBubble(data.nick, data.text, false); 
@@ -365,29 +396,20 @@
             const isMe = (data.from === myNick);
             const displayNick = isMe ? `(Шепот для ${data.to})` : `(Шепот от ${data.from})`;
             const time = getTimestamp();
+            const safeText = linkify(data.text);
             
-            const history = document.getElementById('chat-history');
-            history.innerHTML += `<p class="private-msg-text"><span class="msg-time">[${time}]</span><strong>${displayNick}:</strong> ${data.text}</p>`;
-            history.scrollTop = history.scrollHeight;
+            const html = `<p class="private-msg-text"><span class="msg-time">[${time}]</span><strong>${displayNick}:</strong> ${safeText}</p>`;
+            appendToHistory(html);
 
             const bubbleTarget = isMe ? myNick : data.from;
             showSpeechBubble(bubbleTarget, data.text, true); 
         });
 
-        // МОДЕРНИЗИРОВАННЫЙ ОБРАБОТЧИК СИСТЕМНЫХ СООБЩЕНИЙ С СОХРАНЕНИЕМ ВРЕМЕНИ
         socket.on('systemMessage', (data) => {
-            const history = document.getElementById('chat-history');
             const time = getTimestamp();
-            history.innerHTML += `<p class="system-msg-text"><span class="msg-time">[${time}]</span> • ${data.text}</p>`;
-            history.scrollTop = history.scrollHeight;
+            const html = `<p class="system-msg-text"><span class="msg-time">[${time}]</span> • ${data.text}</p>`;
+            appendToHistory(html);
         });
-
-        function addMessageToChat(nick, text, color) {
-            const history = document.getElementById('chat-history');
-            const time = getTimestamp();
-            history.innerHTML += `<p><span class="msg-time">[${time}]</span><strong style="color:${color}">${nick}:</strong> ${text}</p>`;
-            history.scrollTop = history.scrollHeight;
-        }
     </script>
 </body>
 </html>
