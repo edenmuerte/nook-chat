@@ -148,5 +148,8 @@ io.on('connection', (socket) => {
   });
 });
 
+// --- ИСПРАВЛЕННЫЙ ЗАПУСК СЕРВЕРА ---
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Сервер слушает порт ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Сервер успешно запущен на порту ${PORT}`);
+});
