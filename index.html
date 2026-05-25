@@ -4,25 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nook Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+        /* ПРИМЕНЯЕМ ШРИФТ КО ВСЕМУ ИНТЕРФЕЙСУ */
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #1e1e24; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 300px; background: #2b2b36; display: flex; flex-direction: column; border-right: 1px solid #3f3f4e; z-index: 10; }
         
         #room-selector { padding: 10px; background: #1e1e24; border-bottom: 1px solid #3f3f4e; display: flex; gap: 10px; }
-        #room-select { width: 100%; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; }
+        #room-select { width: 100%; padding: 8px; background: #2b2b36; color: #fff; border: 1px solid #3f3f4e; border-radius: 4px; outline: none; cursor: pointer; font-family: 'Inter', sans-serif; }
         
-        .logout-btn { background: #ff4757; color: white; border: none; padding: 0 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
+        .logout-btn { background: #ff4757; color: white; border: none; padding: 0 15px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; font-family: 'Inter', sans-serif; }
         .logout-btn:hover { background: #ff6b81; }
 
-        /* СТИЛИ ДЛЯ ПАНЕЛИ ПРОФИЛЯ */
         #profile-panel { display: none; padding: 10px 15px; background: #23232c; border-bottom: 1px solid #3f3f4e; justify-content: space-between; align-items: center; }
-        #my-nick-display { font-weight: bold; font-size: 14px; color: #6c5ce7; }
-        .change-avatar-label { background: #3f3f4e; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px dashed #6c5ce7; }
+        #my-nick-display { font-weight: 700; font-size: 14px; color: #6c5ce7; }
+        .change-avatar-label { background: #3f3f4e; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; border: 1px dashed #6c5ce7; }
         .change-avatar-label:hover { background: #4e4e61; }
         #change-avatar-input { display: none; }
 
-        #online-header { padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 13px; }
+        #online-header { padding: 10px 15px; font-weight: 600; border-bottom: 1px solid #3f3f4e; text-align: center; background: #23232c; font-size: 13px; }
         #online-list { padding: 10px 15px; border-bottom: 1px solid #3f3f4e; min-height: 40px; max-height: 120px; overflow-y: auto; font-size: 13px; color: #2ecc71; }
         
         .online-user-item { margin-bottom: 5px; cursor: pointer; transition: color 0.2s; }
@@ -45,24 +48,27 @@
             padding-bottom: 4px;
         }
 
-        #chat-input-area { display: flex; flex-direction: column; padding: 10px; background: #23232c; }
+        #chat-input-area { display: flex; flex-direction: column; padding: 10px; background: #23232c; border-top: 1px solid #3f3f4e; }
         
-        #private-target-badge { display: none; background: #d8a1ff; color: #2b2b36; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 4px; margin-bottom: 5px; cursor: pointer; align-self: flex-start; }
+        #private-target-badge { display: none; background: #d8a1ff; color: #2b2b36; padding: 4px 10px; font-size: 12px; font-weight: 700; border-radius: 4px; margin-bottom: 5px; cursor: pointer; align-self: flex-start; }
         #private-target-badge:hover { background: #e3b8ff; }
 
-        #chat-input { padding: 10px; border: none; border-radius: 4px; background: #1e1e24; color: #fff; outline: none; }
+        /* ИНДИКАТОР ПЕЧАТИ */
+        #typing-indicator { color: #a29bfe; font-size: 11px; font-style: italic; min-height: 16px; margin-bottom: 4px; transition: opacity 0.2s; opacity: 0; }
+
+        #chat-input { padding: 12px; border: none; border-radius: 6px; background: #1e1e24; color: #fff; outline: none; font-family: 'Inter', sans-serif; font-size: 14px; }
         
         #room { flex: 1; position: relative; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
         
         .avatar-container { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: top 0.4s ease-out, left 0.4s ease-out; pointer-events: none; width: 120px; }
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5)); }
-        .nick-label { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; white-space: nowrap; }
+        .nick-label { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-top: 5px; white-space: nowrap; }
         
-        .speech-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 8px 12px; border-radius: 10px; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-bottom: 10px; max-width: 160px; word-wrap: break-word; white-space: normal; z-index: 20; animation: popIn 0.2s ease-out; }
+        .speech-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-bottom: 10px; max-width: 180px; word-wrap: break-word; white-space: normal; z-index: 20; animation: popIn 0.2s ease-out; line-height: 1.3; }
         .speech-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #fff transparent transparent transparent; }
 
-        .speech-bubble.private { background: rgba(255, 255, 255, 0.75); border: 1.5px dashed #d8a1ff; color: #2b2b36; box-shadow: 0 4px 15px rgba(216, 161, 255, 0.3); }
-        .speech-bubble.private::after { border-color: rgba(255, 255, 255, 0.75) transparent transparent transparent; }
+        .speech-bubble.private { background: rgba(255, 255, 255, 0.85); border: 1.5px dashed #d8a1ff; color: #2b2b36; box-shadow: 0 4px 15px rgba(216, 161, 255, 0.3); }
+        .speech-bubble.private::after { border-color: rgba(255, 255, 255, 0.85) transparent transparent transparent; }
 
         @keyframes popIn { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         
@@ -70,17 +76,17 @@
         #login-box { background: #2b2b36; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 320px; max-width: 90%; }
         
         #auth-tabs { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid #3f3f4e; }
-        .auth-tab { padding: 10px; cursor: pointer; color: #aaa; font-weight: bold; transition: 0.2s; border-bottom: 2px solid transparent; }
+        .auth-tab { padding: 10px; cursor: pointer; color: #aaa; font-weight: 600; transition: 0.2s; border-bottom: 2px solid transparent; }
         .auth-tab.active { color: #fff; border-bottom: 2px solid #6c5ce7; }
         
-        .login-input { padding: 12px; margin-bottom: 15px; width: 100%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 14px; outline: none; box-sizing: border-box; }
+        .login-input { padding: 12px; margin-bottom: 15px; width: 100%; border: none; border-radius: 6px; background: #1e1e24; color: #fff; text-align: center; font-size: 14px; outline: none; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         
         .file-input-wrapper { text-align: left; width: 100%; margin-bottom: 15px; }
-        .file-input-label { display: block; padding: 10px; background: #3f3f4e; border-radius: 6px; text-align: center; cursor: pointer; font-size: 13px; transition: 0.2s; border: 1px dashed #6c5ce7; }
+        .file-input-label { display: block; padding: 10px; background: #3f3f4e; border-radius: 6px; text-align: center; cursor: pointer; font-size: 13px; transition: 0.2s; border: 1px dashed #6c5ce7; font-weight: 500; }
         .file-input-label:hover { background: #4e4e61; }
         #avatar-file-input { display: none; }
         
-        #auth-button { padding: 12px 30px; margin-top: 10px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; }
+        #auth-button { padding: 12px 30px; margin-top: 10px; border: none; border-radius: 6px; background: #6c5ce7; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; font-family: 'Inter', sans-serif; }
         #auth-button:hover { background: #5a4bcf; }
         #auth-button:disabled { background: #4e4e61; cursor: not-allowed; }
 
@@ -134,11 +140,12 @@
 
         <div id="online-header">В комнате: <span id="online-count">0</span></div>
         <div id="online-list"></div>
-        <div style="padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36; font-size: 13px;">Чат</div>
+        <div style="padding: 10px 15px; font-weight: 600; border-bottom: 1px solid #3f3f4e; border-top: 1px solid #3f3f4e; text-align: center; background: #2b2b36; font-size: 13px;">Чат</div>
         <div id="chat-history"></div>
         <div id="chat-input-area">
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
-            <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" onkeypress="if(event.key === 'Enter') sendMessage()">
+            <div id="typing-indicator"></div>
+            <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500">
         </div>
     </div>
     
@@ -152,11 +159,18 @@
         let authMode = 'login'; 
         let privateTarget = null; 
         
-        // НОВЫЕ ГЛУБОКИЕ ГЛОБАЛЬНЫЕ КООРДИНАТЫ ДЛЯ СИНХРОНИЗАЦИИ
         let myX = 50;
         let myY = 50;
 
+        // ПЕРЕМЕННЫЕ ДЛЯ ОТСЛЕЖИВАНИЯ ПЕЧАТИ
+        let typingTimer;
+        const TYPING_TIMER_LENGTH = 1500; // 1.5 секунды
+        let amITyping = false;
+        const typingUsers = new Set(); // Кто сейчас печатает
+
         const roomDiv = document.getElementById('room');
+        const chatInput = document.getElementById('chat-input');
+        const typingIndicator = document.getElementById('typing-indicator');
 
         const roomBackgrounds = {
             'main': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070&auto=format&fit=crop',
@@ -164,6 +178,50 @@
             'garden': 'https://images.unsplash.com/photo-1558350172-2775a2f582f3?q=80&w=2070&auto=format&fit=crop'
         };
         roomDiv.style.backgroundImage = `url('${roomBackgrounds['main']}')`;
+
+        // ЛОГИКА ОТПРАВКИ СООБЩЕНИЯ ПО ENTER
+        chatInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // ЛОГИКА ОТСЛЕЖИВАНИЯ ПЕЧАТИ (INPUT)
+        chatInput.addEventListener('input', () => {
+            if (!amITyping) {
+                amITyping = true;
+                socket.emit('typing', true);
+            }
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                amITyping = false;
+                socket.emit('typing', false);
+            }, TYPING_TIMER_LENGTH);
+        });
+
+        // ПРИЕМ ИНФОРМАЦИИ О ТОМ, ЧТО КТО-ТО ПЕЧАТАЕТ
+        socket.on('userTyping', (data) => {
+            if (data.isTyping) {
+                typingUsers.add(data.nick);
+            } else {
+                typingUsers.delete(data.nick);
+            }
+            updateTypingDisplay();
+        });
+
+        function updateTypingDisplay() {
+            if (typingUsers.size === 0) {
+                typingIndicator.style.opacity = '0';
+            } else {
+                typingIndicator.style.opacity = '1';
+                if (typingUsers.size === 1) {
+                    typingIndicator.innerText = `${Array.from(typingUsers)[0]} печатает...`;
+                } else {
+                    typingIndicator.innerText = `Несколько человек печатают...`;
+                }
+            }
+        }
 
         function getTimestamp() {
             const now = new Date();
@@ -252,7 +310,6 @@
             localStorage.setItem('nook_pass', pass);
             document.getElementById('overlay').style.display = 'none'; 
             
-            // Активируем и заполняем панель профиля в сайдбаре
             document.getElementById('my-nick-display').innerText = nick;
             document.getElementById('profile-panel').style.display = 'flex';
 
@@ -273,7 +330,6 @@
             return data.secure_url;
         }
 
-        // --- НОВАЯ ФУНКЦИЯ ДЛЯ СМЕНЫ АВАТАРКИ ИЗ ПРОФИЛЯ ---
         async function handleChangeAvatar() {
             const input = document.getElementById('change-avatar-input');
             const label = document.getElementById('change-avatar-label');
@@ -283,15 +339,12 @@
             label.innerText = '⌛ Загрузка...';
 
             try {
-                // 1. Загружаем новую картинку в Cloudinary
                 const newUrl = await uploadToCloudinary(input.files[0]);
                 myAvatarUrl = newUrl;
 
-                // 2. Отправляем на сервер для сохранения в MongoDB и синхронизации
                 socket.emit('changeAvatar', newUrl, (response) => {
                     if (response.success) {
                         label.innerText = '✔️ Готово';
-                        // Сразу перерисовываем себя на нашей сцене
                         updateAvatar(myNick, myAvatarUrl, myX, myY);
                         setTimeout(() => { label.innerText = oldText; }, 2000);
                     } else {
@@ -311,7 +364,7 @@
             const badge = document.getElementById('private-target-badge');
             badge.innerText = `Шепот для: ${nick} ✖`;
             badge.style.display = 'block';
-            document.getElementById('chat-input').focus();
+            chatInput.focus();
         }
 
         function clearPrivateTarget() {
@@ -327,6 +380,10 @@
             const avatars = document.querySelectorAll('.avatar-container');
             avatars.forEach(avatar => { if (avatar.id !== 'avatar-' + myNick) avatar.remove(); });
             
+            // Очищаем индикатор печати при смене комнаты
+            typingUsers.clear();
+            updateTypingDisplay();
+
             myX = 50; myY = 50;
             socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: myX, y: myY });
             updateAvatar(myNick, myAvatarUrl, myX, myY);
@@ -337,9 +394,16 @@
         });
 
         socket.on('userSpawned', (u) => { updateAvatar(u.nick, u.avatar, u.x, u.y); });
+        
         socket.on('userLeft', (nick) => {
             const avatarNode = document.getElementById('avatar-' + nick);
             if (avatarNode) avatarNode.remove();
+            
+            // Удаляем юзера из печатающих, если он вышел
+            if (typingUsers.has(nick)) {
+                typingUsers.delete(nick);
+                updateTypingDisplay();
+            }
         });
 
         socket.on('updateOnlineList', (users) => {
@@ -415,8 +479,7 @@
         }
 
         function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
+            const msg = chatInput.value.trim();
             
             if (msg.length > 500) {
                 alert('Сообщение слишком длинное!');
@@ -431,7 +494,12 @@
                     addMessageToChat(myNick, msg, '#6c5ce7');
                     showSpeechBubble(myNick, msg, false); 
                 }
-                input.value = '';
+                chatInput.value = '';
+                
+                // Сбрасываем статус печати сразу после отправки
+                amITyping = false;
+                socket.emit('typing', false);
+                clearTimeout(typingTimer);
             }
         }
 
