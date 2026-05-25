@@ -9,19 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        /* --- СОВРЕМЕННЫЙ ВИЗУАЛЬНЫЙ ДВИЖОК (CSS ПЕРЕМЕННЫЕ) --- */
+        /* --- СОВРЕМЕННЫЙ ВИЗУАЛЬНЫЙ ДВИЖОК --- */
         :root {
-            /* Темная тема (по умолчанию) */
-            --bg-body: linear-gradient(135deg, #16161a 0%, #1e1e24 100%);
-            --bg-sidebar: rgba(30, 30, 36, 0.65);
-            --bg-panel: rgba(43, 43, 54, 0.8);
-            --bg-input: rgba(0, 0, 0, 0.2);
+            /* Темная тема */
+            --bg-sidebar: rgba(22, 22, 26, 0.55);
+            --bg-panel: rgba(35, 35, 44, 0.65);
+            --bg-input: rgba(0, 0, 0, 0.25);
             --text-main: #f8f9fa;
             --text-muted: #a0a0ab;
-            --border-color: rgba(255, 255, 255, 0.08);
+            --border-color: rgba(255, 255, 255, 0.1);
             --accent: #8c7ae6;
             --accent-hover: #7158e2;
-            --private-bg: rgba(140, 122, 230, 0.1);
+            --private-bg: rgba(140, 122, 230, 0.15);
             --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.15);
             --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.3);
             
@@ -33,10 +32,9 @@
 
         [data-theme="light"] {
             /* Светлая тема */
-            --bg-body: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-            --bg-sidebar: rgba(255, 255, 255, 0.7);
-            --bg-panel: rgba(255, 255, 255, 0.9);
-            --bg-input: rgba(0, 0, 0, 0.04);
+            --bg-sidebar: rgba(255, 255, 255, 0.55);
+            --bg-panel: rgba(255, 255, 255, 0.75);
+            --bg-input: rgba(255, 255, 255, 0.6);
             --text-main: #2d3436;
             --text-muted: #636e72;
             --border-color: rgba(0, 0, 0, 0.08);
@@ -47,22 +45,51 @@
             --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
         }
 
-        /* БАЗОВЫЕ СТИЛИ */
-        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; transition: background var(--transition), color var(--transition); }
+        /* ИЗМЕНЕННАЯ БАЗОВАЯ РАЗМЕТКА ДЛЯ ГЛАССМОРФИЗМА */
+        body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text-main); height: 100vh; overflow: hidden; background: #000; transition: color var(--transition); }
         
-        /* САЙДБАР И ЭФФЕКТ СТЕКЛА */
-        #sidebar { width: 320px; background: var(--bg-sidebar); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; transition: background var(--transition), border-color var(--transition); }
+        /* Комната теперь на весь экран на заднем фоне */
+        #room { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
+
+        /* Сайдбар висит поверх комнаты с эффектом стекла */
+        #sidebar { position: absolute; top: 0; left: 0; bottom: 0; width: 320px; background: var(--bg-sidebar); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; box-shadow: 4px 0 24px rgba(0,0,0,0.1); transition: background var(--transition), border-color var(--transition); }
         
-        /* ШАПКА И ПРОФИЛЬ */
+        /* ШАПКА И СЕЛЕКТ КОМНАТ */
         #room-selector { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
-        #room-select { width: 100%; padding: 10px 14px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); outline: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: var(--transition); font-weight: 500; }
+        
+        /* ИСПРАВЛЕННЫЙ СЕЛЕКТ (КАСТОМНАЯ СТРЕЛКА И ПАДДИНГИ) */
+        #room-select { 
+            flex: 1; 
+            padding: 10px 40px 10px 14px; /* Место под стрелку справа */
+            background-color: var(--bg-input); 
+            color: var(--text-main); 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius-md); 
+            outline: none; 
+            cursor: pointer; 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 500;
+            appearance: none; /* Убиваем стандартную стрелку браузера */
+            -webkit-appearance: none;
+            /* Рисуем свою аккуратную SVG-стрелочку */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            transition: var(--transition);
+        }
         #room-select:focus { border-color: var(--accent); }
         
+        /* Немного причешем выпадающий список опций (насколько позволяет браузер) */
+        #room-select option { background-color: #2b2b36; color: #fff; }
+        [data-theme="light"] #room-select option { background-color: #fff; color: #000; }
+
         .icon-btn { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 0 14px; border-radius: var(--radius-md); cursor: pointer; font-size: 16px; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
         .icon-btn:hover { background: var(--border-color); }
         .icon-btn.danger { color: #ff4757; }
         .icon-btn.danger:hover { background: rgba(255, 71, 87, 0.1); border-color: rgba(255, 71, 87, 0.2); }
 
+        /* ПАНЕЛЬ ПРОФИЛЯ */
         #profile-panel { display: none; padding: 12px 16px; border-bottom: 1px solid var(--border-color); justify-content: space-between; align-items: center; gap: 10px; }
         #my-nick-display { font-weight: 700; font-size: 14px; color: var(--accent); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
@@ -70,12 +97,21 @@
         .change-avatar-label:hover { background: var(--bg-input); color: var(--text-main); }
         #change-avatar-input { display: none; }
 
-        /* СПИСОК ОНЛАЙН */
+        /* ИСПРАВЛЕННЫЙ СПИСОК ОНЛАЙН (КРАСИВЫЕ БЕЙДЖИ) */
         #online-header { padding: 12px 16px; font-weight: 600; text-align: center; font-size: 12px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
-        #online-list { padding: 0 16px 12px; border-bottom: 1px solid var(--border-color); min-height: 40px; max-height: 100px; overflow-y: auto; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; }
+        #online-list { padding: 0 16px 12px; border-bottom: 1px solid var(--border-color); min-height: 40px; max-height: 100px; overflow-y: auto; font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px; }
         
-        .online-user-item { background: var(--bg-input); padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: var(--transition); border: 1px solid transparent; font-weight: 500; }
-        .online-user-item:hover { background: var(--private-bg); border-color: var(--accent); color: var(--accent); }
+        .online-user-item { 
+            background: var(--bg-panel); 
+            padding: 6px 14px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            transition: var(--transition); 
+            border: 1px solid var(--border-color); 
+            font-weight: 500; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05); 
+        }
+        .online-user-item:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 
         /* ИСТОРИЯ ЧАТА */
         #chat-history { flex: 1; padding: 16px; overflow-y: auto; font-size: 14px; scroll-behavior: smooth; display: flex; flex-direction: column; gap: 8px; }
@@ -98,23 +134,21 @@
         #chat-input { padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-panel); color: var(--text-main); outline: none; font-family: 'Inter', sans-serif; font-size: 14px; transition: var(--transition); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         #chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1); }
         
-        /* ИГРОВАЯ КОМНАТА */
-        #room { flex: 1; position: relative; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; transition: background-image 0.5s ease; }
-        
+        /* АВАТАРЫ И БАБЛЫ В КОМНАТЕ */
         .avatar-container { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: top 0.4s ease-out, left 0.4s ease-out; pointer-events: none; width: 120px; }
         .avatar-img { max-width: 100px; max-height: 120px; object-fit: contain; filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.4)); transition: transform 0.2s; }
         .avatar-container:hover .avatar-img { transform: scale(1.05); }
         
-        .nick-label { background: var(--bg-panel); color: var(--text-main); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 8px; white-space: nowrap; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); backdrop-filter: blur(4px); }
+        .nick-label { background: var(--bg-panel); color: var(--text-main); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 8px; white-space: nowrap; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         
-        .speech-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--bg-panel); color: var(--text-main); padding: 10px 16px; border-radius: var(--radius-lg); border-bottom-left-radius: 4px; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); margin-bottom: 12px; max-width: 200px; word-wrap: break-word; white-space: normal; z-index: 20; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); line-height: 1.4; border: 1px solid var(--border-color); }
-        .speech-bubble.private { border: 2px solid var(--accent); background: var(--bg-body); }
+        .speech-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--bg-panel); color: var(--text-main); padding: 10px 16px; border-radius: var(--radius-lg); border-bottom-left-radius: 4px; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); margin-bottom: 12px; max-width: 200px; word-wrap: break-word; white-space: normal; z-index: 20; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); line-height: 1.4; border: 1px solid var(--border-color); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .speech-bubble.private { border: 2px solid var(--accent); }
 
         @keyframes popIn { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         
         /* ОКНО АВТОРИЗАЦИИ */
-        #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s; }
-        #login-box { background: var(--bg-panel); padding: 40px; border-radius: var(--radius-lg); text-align: center; box-shadow: var(--shadow-lg); width: 340px; max-width: 90%; border: 1px solid var(--border-color); }
+        #overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s; }
+        #login-box { background: var(--bg-panel); padding: 40px; border-radius: var(--radius-lg); text-align: center; box-shadow: var(--shadow-lg); width: 340px; max-width: 90%; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         
         #auth-tabs { display: flex; justify-content: space-around; margin-bottom: 24px; position: relative; }
         #auth-tabs::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--border-color); z-index: 1; }
@@ -128,6 +162,7 @@
         .file-input-wrapper { text-align: left; width: 100%; margin-bottom: 20px; }
         .file-input-label { display: block; padding: 14px; background: transparent; border-radius: var(--radius-md); text-align: center; cursor: pointer; font-size: 13px; transition: var(--transition); border: 1px dashed var(--border-color); font-weight: 500; color: var(--text-muted); }
         .file-input-label:hover { border-color: var(--accent); color: var(--accent); background: rgba(108, 92, 231, 0.05); }
+        #avatar-file-input { display: none; }
         
         #auth-button { padding: 14px; margin-top: 8px; border: none; border-radius: var(--radius-md); background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: var(--transition); width: 100%; font-family: 'Inter', sans-serif; box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
         #auth-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4); }
@@ -135,41 +170,24 @@
 
         #error-msg { color: #ff4757; font-size: 13px; margin-top: 16px; font-weight: 500; display: none; background: rgba(255, 71, 87, 0.1); padding: 10px; border-radius: var(--radius-sm); }
 
-        /* СКРОЛЛБАР */
+        /* АККУРАТНЫЙ СКРОЛЛБАР */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        ::-webkit-scrollbar-thumb { background: rgba(160, 160, 171, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(160, 160, 171, 0.5); }
 
         @media (max-width: 768px) {
-            body { flex-direction: column-reverse; }
-            #sidebar { width: 100%; flex: 1; border-right: none; border-top: 1px solid var(--border-color); }
-            #room { flex: 1; min-height: 40vh; }
+            #sidebar { width: 100%; border-right: none; }
+            /* На мобилках комната уходит под сайдбар полностью, поэтому временно отключим абсолютное позиционирование для мобилок */
+            #room { position: relative; height: 40vh; }
+            #sidebar { position: relative; height: 60vh; }
             #login-box { padding: 30px 20px; }
             #online-list { max-height: 60px; }
         }
     </style>
 </head>
 <body>
-    <div id="overlay">
-        <div id="login-box">
-            <h2 id="auth-title" style="margin-top: 0; margin-bottom: 24px; font-weight: 700; letter-spacing: -0.5px;">Вход в Nook</h2>
-            <div id="auth-tabs">
-                <div class="auth-tab active" id="tab-login" onclick="switchMode('login')">Вход</div>
-                <div class="auth-tab" id="tab-register" onclick="switchMode('register')">Регистрация</div>
-            </div>
-            <input type="text" id="nickname-input" class="login-input" placeholder="Никнейм..." autofocus>
-            <input type="password" id="password-input" class="login-input" placeholder="Пароль..." onkeypress="if(event.key === 'Enter') handleAuth()">
-            <div id="register-fields" style="display: none;">
-                <div class="file-input-wrapper">
-                    <label for="avatar-file-input" id="file-label" class="file-input-label">🖼️ Выбрать аватар</label>
-                    <input type="file" id="avatar-file-input" accept="image/*" onchange="displayFileName()">
-                </div>
-            </div>
-            <button id="auth-button" onclick="handleAuth()">Войти в комнату</button>
-            <div id="error-msg"></div>
-        </div>
-    </div>
+    <div id="room"></div>
 
     <div id="sidebar">
         <div id="room-selector">
@@ -197,8 +215,26 @@
             <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500">
         </div>
     </div>
-    
-    <div id="room"></div>
+
+    <div id="overlay">
+        <div id="login-box">
+            <h2 id="auth-title" style="margin-top: 0; margin-bottom: 24px; font-weight: 700; letter-spacing: -0.5px;">Вход в Nook</h2>
+            <div id="auth-tabs">
+                <div class="auth-tab active" id="tab-login" onclick="switchMode('login')">Вход</div>
+                <div class="auth-tab" id="tab-register" onclick="switchMode('register')">Регистрация</div>
+            </div>
+            <input type="text" id="nickname-input" class="login-input" placeholder="Никнейм..." autofocus>
+            <input type="password" id="password-input" class="login-input" placeholder="Пароль..." onkeypress="if(event.key === 'Enter') handleAuth()">
+            <div id="register-fields" style="display: none;">
+                <div class="file-input-wrapper">
+                    <label for="avatar-file-input" id="file-label" class="file-input-label">🖼️ Выбрать аватар</label>
+                    <input type="file" id="avatar-file-input" accept="image/*" onchange="displayFileName()">
+                </div>
+            </div>
+            <button id="auth-button" onclick="handleAuth()">Войти в комнату</button>
+            <div id="error-msg"></div>
+        </div>
+    </div>
 
     <script>
         const socket = io('https://nook-chat.onrender.com'); 
@@ -227,7 +263,6 @@
         };
         Object.values(sfx).forEach(audio => audio.volume = 0.4);
 
-        // --- ЛОГИКА ТЕМЫ (ТЕМНАЯ/СВЕТЛАЯ) ---
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -241,12 +276,10 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Восстановление темы
             const savedTheme = localStorage.getItem('nook_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             updateThemeIcon(savedTheme);
 
-            // Восстановление логина
             const savedNick = localStorage.getItem('nook_nick');
             const savedPass = localStorage.getItem('nook_pass');
             if (savedNick && savedPass) {
@@ -404,6 +437,7 @@
         function finalizeAuth(nick, pass) {
             localStorage.setItem('nook_nick', nick);
             localStorage.setItem('nook_pass', pass);
+            
             document.getElementById('overlay').style.opacity = '0';
             setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
             
@@ -515,6 +549,8 @@
 
         roomDiv.addEventListener('click', (e) => {
             if (!myNick) return; 
+            // Клик под сайдбаром не сработает физически, так как сайдбар перекрывает комнату.
+            // Поэтому e.clientX всегда будет правильным (мы кликаем только по видимой части комнаты).
             const rect = roomDiv.getBoundingClientRect();
             myX = ((e.clientX - rect.left) / rect.width) * 100;
             myY = ((e.clientY - rect.top) / rect.height) * 100;
