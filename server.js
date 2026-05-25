@@ -67,14 +67,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('joinRoom', ({ nick, room, avatar, x, y }) => {
-    // Если пользователь уже был в комнате — значит он переходит в другую локацию
     if (users[socket.id] && users[socket.id].room) {
       const oldRoom = users[socket.id].room;
       socket.leave(oldRoom);
       sendOnlineList(oldRoom);
       io.to(oldRoom).emit('userLeft', nick);
-      
-      // Лог для старой комнаты: юзер ушел
       io.to(oldRoom).emit('systemMessage', { text: `Пользователь ${nick} перешел в другую комнату` });
     }
 
@@ -86,8 +83,34 @@ io.on('connection', (socket) => {
     socket.emit('roomState', usersInRoom);
     socket.to(room).emit('userSpawned', users[socket.id]);
     
-    // Лог для новой комнаты: юзер вошел
     socket.to(room).emit('systemMessage', { text: `Пользователь ${nick} вошел в комнату` });
+  });
+
+  // --- НОВОЕ: ОБНОВЛЕНИЕ АВАТАРКИ ИЗ ИНТЕРФЕЙСА ---
+  socket.on('changeAvatar', async (newAvatarUrl, callback) => {
+    try {
+      const currentUser = users[socket.id];
+      if (!currentUser) return callback({ success: false, message: 'Пользователь не авторизован.' });
+
+      // 1. Обновляем в базе данных MongoDB навсегда
+      await User.updateOne({ nick: currentUser.nick }, { avatar: newAvatarUrl });
+
+      // 2. Обновляем в текущей оперативной памяти сервера
+      currentUser.avatar = newAvatarUrl;
+
+      // 3. Оповещаем всех в комнате, чтобы у них мгновенно перерисовался наш аватар
+      io.to(currentUser.room).emit('move', {
+        nick: currentUser.nick,
+        avatar: newAvatarUrl,
+        x: currentUser.x,
+        y: currentUser.y
+      });
+
+      callback({ success: true });
+    } catch (error) {
+      console.error(error);
+      callback({ success: false, message: 'Ошибка сервера при обновлении аватара.' });
+    }
   });
 
   socket.on('chatMessage', (data) => {
@@ -127,8 +150,6 @@ io.on('connection', (socket) => {
       delete users[socket.id];
       sendOnlineList(room);
       io.to(room).emit('userLeft', nick);
-      
-      // Лог полного выхода из чата (закрыл вкладку или нажал логаут)
       io.to(room).emit('systemMessage', { text: `Пользователь ${nick} покинул чат` });
     }
   });
