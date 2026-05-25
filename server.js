@@ -3,11 +3,13 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose'); 
 const bcrypt = require('bcryptjs');   
+const path = require('path'); // НОВОЕ: модуль для путей
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
+// ВСТАВЬ СВОЙ ПАРОЛЬ ОТ BAZY DANYH
 const MONGO_URI = 'mongodb+srv://nookadmin:aIgQ5nkwI0wTDVlY@nookcluster.vukngte.mongodb.net/?appName=NookCluster';
 
 mongoose.connect(MONGO_URI)
@@ -30,9 +32,15 @@ function sendOnlineList(room) {
   io.to(room).emit('updateOnlineList', usersInRoom);
 }
 
+// --- НОВОЕ: РАЗДАЧА ФРОНТЕНДА ПРЯМО С РЕНДЕРА ---
+// Говорим серверу, что файлы index.html, manifest.json и sw.js лежат в этой же папке
+app.use(express.static(__dirname));
+
+// При заходе на главную страницу отдаем наш чат
 app.get('/', (req, res) => {
-  res.send('Сервер Nook Chat успешно запущен!');
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
+// ------------------------------------------------
 
 io.on('connection', (socket) => {
   
@@ -127,7 +135,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // --- НОВОЕ: ТРАНСЛЯЦИЯ СОСТОЯНИЯ ПЕЧАТИ ---
   socket.on('typing', (isTyping) => {
     if (users[socket.id]) {
       socket.to(users[socket.id].room).emit('userTyping', {
@@ -148,8 +155,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// --- ИСПРАВЛЕННЫЙ ЗАПУСК СЕРВЕРА ---
+// --- ИСПРАВЛЕННЫЙ ПОРТ ДЛЯ РЕНДЕРА ---
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Сервер успешно запущен на порту ${PORT}`);
-});
+server.listen(PORT, '0.0.0.0', () => console.log(`Сервер слушает порт ${PORT}`));
