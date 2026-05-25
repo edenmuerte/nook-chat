@@ -165,42 +165,30 @@
         let amITyping = false;
         const typingUsers = new Set(); 
 
-        // --- ЛОГИКА УВЕДОМЛЕНИЙ В ФОНЕ (ВКЛАДКИ И ЗВУКИ) ---
-        let isTabActive = true;
+        // --- ЛОГИКА УВЕДОМЛЕНИЙ В ФОНЕ (ФОКУС И ЗВУКИ) ---
         let unreadCount = 0;
         const originalTitle = 'Nook Chat';
 
-        // Набор аккуратных звуков
         const sfx = {
-            message: new Audio('https://actions.google.com/sounds/v1/water/water_drop.ogg'), // Легкая капля
-            private: new Audio('https://actions.google.com/sounds/v1/communications/incoming_text_ping.ogg'), // Звонкий пинг
-            enter: new Audio('https://actions.google.com/sounds/v1/doors/wood_door_open.ogg'), // Дверь открылась
-            leave: new Audio('https://actions.google.com/sounds/v1/doors/wood_door_close.ogg')  // Дверь закрылась
+            message: new Audio('https://actions.google.com/sounds/v1/water/water_drop.ogg'),
+            private: new Audio('https://actions.google.com/sounds/v1/communications/incoming_text_ping.ogg'),
+            enter: new Audio('https://actions.google.com/sounds/v1/doors/wood_door_open.ogg'),
+            leave: new Audio('https://actions.google.com/sounds/v1/doors/wood_door_close.ogg')
         };
-
-        // Делаем звуки тише, чтобы не пугали
         Object.values(sfx).forEach(audio => audio.volume = 0.4);
 
-// --- ЛОГИКА УВЕДОМЛЕНИЙ В ФОНЕ (ФОКУС ОКНА И ЗВУКИ) ---
-        let unreadCount = 0;
-        const originalTitle = 'Nook Chat';
-
-        // Когда окно снова становится активным (мы кликнули по нему)
         window.addEventListener('focus', () => {
             unreadCount = 0;
             document.title = originalTitle;
         });
 
-        // Функция воспроизведения звука
         function playSound(type) {
-            // Играем звук, если окно НЕ в фокусе (мы в другой вкладке или другом приложении)
             if (!document.hasFocus() && sfx[type]) {
-                sfx[type].currentTime = 0; // Сбрасываем звук на начало, чтобы он не "зажевывался"
-                sfx[type].play().catch(e => console.log('Браузер заблокировал звук (кликните по экрану хотя бы раз):', e));
+                sfx[type].currentTime = 0; 
+                sfx[type].play().catch(e => console.log('Аудио заблокировано браузером до первого клика:', e));
             }
         }
 
-        // Функция обновления заголовка вкладки
         function notifyBackground(isPrivate = false) {
             if (!document.hasFocus()) {
                 unreadCount++;
@@ -431,13 +419,11 @@
             usersInRoom.forEach(u => { if (u.nick !== myNick) updateAvatar(u.nick, u.avatar, u.x, u.y); });
         });
 
-        // ВОСПРОИЗВОДИМ ЗВУК ПРИ ВХОДЕ (если скрыта вкладка)
         socket.on('userSpawned', (u) => { 
             updateAvatar(u.nick, u.avatar, u.x, u.y); 
             playSound('enter');
         });
         
-        // ВОСПРОИЗВОДИМ ЗВУК ПРИ ВЫХОДЕ (если скрыта вкладка)
         socket.on('userLeft', (nick) => {
             const avatarNode = document.getElementById('avatar-' + nick);
             if (avatarNode) avatarNode.remove();
@@ -552,7 +538,6 @@
             appendToHistory(html);
         }
 
-        // ОБРАБОТКА ВХОДЯЩИХ СООБЩЕНИЙ СО ЗВУКОМ И УВЕДОМЛЕНИЯМИ
         socket.on('message', (data) => {
             addMessageToChat(data.nick, data.text, '#a29bfe');
             showSpeechBubble(data.nick, data.text, false); 
@@ -572,7 +557,6 @@
             const bubbleTarget = isMe ? myNick : data.from;
             showSpeechBubble(bubbleTarget, data.text, true); 
             
-            // Если сообщение пришло нам (а не мы сами его отправили), проигрываем звук
             if (!isMe) {
                 playSound('private');
                 notifyBackground(true);
