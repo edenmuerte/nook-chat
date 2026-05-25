@@ -13,13 +13,17 @@ app.get('/', (req, res) => {
   res.send('Сервер Nook Chat успешно запущен и работает!');
 });
 
-// Логика чата
 io.on('connection', (socket) => {
   console.log('Новый пользователь зашел в Nook!');
 
-  // Когда кто-то пишет сообщение, пересылаем его всем остальным
+  // Пересылка текстовых сообщений
   socket.on('chatMessage', (data) => {
     socket.broadcast.emit('message', data);
+  });
+
+  // Пересылка координат перемещения
+  socket.on('move', (data) => {
+    socket.broadcast.emit('move', data);
   });
 
   socket.on('disconnect', () => {
