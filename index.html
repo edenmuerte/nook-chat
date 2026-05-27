@@ -325,7 +325,7 @@
             document.getElementById('theme-btn').innerText = theme === 'dark' ? '☀️' : '🌙';
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('nook_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             updateThemeIcon(savedTheme);
@@ -335,6 +335,9 @@
             if (savedNick && savedPass) {
                 document.getElementById('nickname-input').value = savedNick;
                 document.getElementById('password-input').value = savedPass;
+                
+                // АВТОВХОД:
+                handleAuth(); 
             }
         });
 
@@ -485,7 +488,7 @@
             }
         }
 
-        function finalizeAuth(nick, pass) {
+    function finalizeAuth(nick, pass) {
             localStorage.setItem('nook_nick', nick);
             localStorage.setItem('nook_pass', pass);
             
@@ -495,9 +498,10 @@
             document.getElementById('my-nick-display').innerText = nick;
             document.getElementById('profile-panel').style.display = 'flex';
 
-            myX = 50; myY = 50;
-            socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: myX, y: myY });
-            updateAvatar(myNick, myAvatarUrl, myX, myY);
+            // --- ФИКС ЧЕРНОГО ЭКРАНА И КОМНАТ ---
+            // Убеждаемся, что в меню стоит нужная комната, и принудительно ее загружаем
+            document.getElementById('room-select').value = currentRoom;
+            changeRoom(); 
         }
 
         async function uploadToCloudinary(file) {
