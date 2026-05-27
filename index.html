@@ -723,10 +723,16 @@
         // --- ЛОГИКА ЭМОДЗИ ---
         function sendEmoji(emoji) {
             if (!myNick) return;
-            // Показываем у себя
+            
+            // 1. Показываем всплывающую реакцию над аватаром и отправляем другим
             showFloatingEmoji(myNick, emoji);
-            // Отправляем на сервер
             socket.emit('emojiReaction', { nick: myNick, emoji: emoji, room: currentRoom });
+
+            // 2. Добавляем этот же смайл в поле ввода
+            chatInput.value += emoji;
+            
+            // 3. Возвращаем фокус на поле ввода, чтобы можно было сразу печатать дальше
+            chatInput.focus();
         }
 
         socket.on('emojiReaction', (data) => {
