@@ -14,7 +14,35 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js">
+        // Фикс для iOS: жесткая привязка высоты приложения к видимому экрану при открытии клавиатуры
+        if (window.visualViewport) {
+            const viewport = window.visualViewport;
+            
+            function resizeHandler() {
+                // Жестко задаем высоту body равной реальному пространству над клавиатурой
+                document.body.style.height = viewport.height + 'px';
+                
+                // Если мы на мобилке и чат открыт, скроллим историю вниз
+                if (window.innerWidth <= 768 && !document.body.classList.contains('sidebar-collapsed')) {
+                    const history = document.getElementById('chat-history');
+                    history.scrollTop = history.scrollHeight;
+                }
+            }
+            
+            viewport.addEventListener('resize', resizeHandler);
+            viewport.addEventListener('scroll', resizeHandler);
+        }
+        // Блокируем пружинящий скролл Safari везде, КРОМЕ истории чата и списка онлайна
+        document.addEventListener('touchmove', function(e) {
+            const isChatHistory = e.target.closest('#chat-history');
+            const isOnlineList = e.target.closest('#online-list');
+            
+            if (!isChatHistory && !isOnlineList) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
     <style>
         /* --- СОВРЕМЕННЫЙ ВИЗУАЛЬНЫЙ ДВИЖОК --- */
         :root { --bg-sidebar: rgba(28, 26, 25, 0.65); --bg-panel: rgba(43, 39, 37, 0.75); --bg-input: rgba(0, 0, 0, 0.3); --text-main: #f5f0eb; --text-muted: #bcaba0; --border-color: rgba(236, 219, 186, 0.08); --accent: #dfb76c; --accent-hover: #f1c40f; --private-bg: rgba(223, 183, 108, 0.1); --shadow-sm: 0 4px 12px rgba(0,0,0,0.2); --shadow-lg: 0 12px 32px rgba(0,0,0,0.4); --radius-lg: 16px; --radius-md: 12px; --radius-sm: 8px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
