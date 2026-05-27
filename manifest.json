@@ -1,10 +1,10 @@
 {
   "name": "Nook Chat",
   "short_name": "Nook",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1e1e24",
-  "theme_color": "#1e1e24",
+  "background_color": "#1c1a19",
+  "theme_color": "#1c1a19",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/1041/1041916.png",
