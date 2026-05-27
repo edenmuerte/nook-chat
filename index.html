@@ -17,25 +17,7 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         /* --- СОВРЕМЕННЫЙ ВИЗУАЛЬНЫЙ ДВИЖОК --- */
-        :root {
-            /* Темная тема */
-            --bg-sidebar: rgba(22, 22, 26, 0.55);
-            --bg-panel: rgba(35, 35, 44, 0.65);
-            --bg-input: rgba(0, 0, 0, 0.25);
-            --text-main: #f8f9fa;
-            --text-muted: #a0a0ab;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --accent: #8c7ae6;
-            --accent-hover: #7158e2;
-            --private-bg: rgba(140, 122, 230, 0.15);
-            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.15);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.3);
-            
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
-            --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
+        :root { --bg-sidebar: rgba(28, 26, 25, 0.65); --bg-panel: rgba(43, 39, 37, 0.75); --bg-input: rgba(0, 0, 0, 0.3); --text-main: #f5f0eb; --text-muted: #bcaba0; --border-color: rgba(236, 219, 186, 0.08); --accent: #dfb76c; --accent-hover: #f1c40f; --private-bg: rgba(223, 183, 108, 0.1); --shadow-sm: 0 4px 12px rgba(0,0,0,0.2); --shadow-lg: 0 12px 32px rgba(0,0,0,0.4); --radius-lg: 16px; --radius-md: 12px; --radius-sm: 8px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
 
         [data-theme="light"] {
             /* Светлая тема */
@@ -214,13 +196,8 @@
         ::-webkit-scrollbar-thumb { background: rgba(160, 160, 171, 0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(160, 160, 171, 0.5); }
 
-        @media (max-width: 768px) {
-            #sidebar { width: 100%; border-right: none; }
-            #room { position: relative; height: 40dvh; }
-            #sidebar { position: relative; height: 60dvh; }
-            #login-box { padding: 30px 20px; }
-            #online-list { max-height: 60px; }
-        }
+        @media (max-width: 768px) { #room { position: relative; height: 65dvh; transition: height var(--transition); } #sidebar { position: relative; height: 35dvh; width: 100%; transition: transform var(--transition), height var(--transition); border-left: none; border-top: 1px solid var(--border-color); } body.sidebar-collapsed #room { height: 100dvh; } body.sidebar-collapsed #sidebar { height: 0dvh; transform: translateY(100%); overflow: hidden; display: none; } body.sidebar-collapsed #floating-toggle { display: flex; } }
+        
         /* --- СТИЛИ ДЛЯ ЭМОДЗИ --- */
         #emoji-bar { display: flex; gap: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
         #emoji-bar::-webkit-scrollbar { display: none; }
@@ -234,11 +211,12 @@
             10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.2); }
             100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
         }
+        #floating-toggle { position: absolute; top: 16px; left: 16px; z-index: 99; display: none; background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-lg); } body.sidebar-collapsed #floating-toggle { display: flex; } #sidebar { transition: transform var(--transition); } body.sidebar-collapsed #sidebar { transform: translateX(-100%); } .input-row { display: flex; gap: 8px; width: 100%; }
     </style>
 </head>
 <body>
+    <button class="icon-btn" id="floating-toggle" onclick="toggleSidebar()" title="Показать чат">💬</button>
     <div id="room"></div>
-
     <div id="sidebar">
         <div id="room-selector">
             <select id="room-select" onchange="changeRoom()">
@@ -249,6 +227,8 @@
             </select>
             <button class="icon-btn" onclick="toggleTheme()" title="Переключить тему" id="theme-btn">☀️</button>
             <button class="icon-btn danger" onclick="logout()" title="Выйти из аккаунта">🚪</button>
+            <button class="icon-btn" onclick="toggleTheme()" title="Переключить тему" id="theme-btn">☀️</button>
+            <button class="icon-btn" onclick="toggleSidebar()" title="Скрыть чат">👁️</button> <button class="icon-btn danger" onclick="logout()" title="Выйти из аккаунта">🚪</button>
         </div>
 
         <div id="profile-panel">
@@ -263,6 +243,8 @@
         <div id="chat-input-area">
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
             <div id="typing-indicator"></div>
+            <div class="input-row"> <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1;">
+                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;">⬆️</button> </div>
             
             <div id="emoji-bar">
                 <span class="emoji-btn" onclick="sendEmoji('❤️')">❤️</span>
@@ -276,8 +258,6 @@
                 <span class="emoji-btn" onclick="sendEmoji('🥰')">🥰</span>
                 <span class="emoji-btn" onclick="sendEmoji('🤔')">🤔</span>
             </div>
-            
-            <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500">
         </div>
     </div>
 
@@ -303,6 +283,13 @@
 
     <script>
         const socket = io('https://nook-chat.onrender.com'); 
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-collapsed');
+            // Принудительно триггерим перерасчет размеров карты, чтобы аватары не смещались
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 300);
+        }
+        
         let myNick = '';
         let myAvatarUrl = '';
         let currentRoom = localStorage.getItem('nook_room') || 'yard';
