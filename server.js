@@ -144,6 +144,12 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Обработка всплывающих эмодзи
+  socket.on('emojiReaction', (data) => {
+      // Пересылаем эмодзи всем пользователям в той же комнате
+      io.to(data.room).emit('emojiReaction', data);
+  });
+
   socket.on('disconnect', () => {
     if (users[socket.id]) {
       const { nick, room } = users[socket.id];
