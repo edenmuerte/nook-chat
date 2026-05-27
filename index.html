@@ -423,6 +423,17 @@
             }
         }
 
+        function getColorForNick(nick) {
+            let hash = 0;
+            for (let i = 0; i < nick.length; i++) {
+                hash = nick.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // Берем остаток от деления на 360 (градусы цветового круга)
+            const hue = Math.abs(hash % 360);
+            // 70% насыщенности и 75% светлоты дают приятные глазу, благородные оттенки
+            return `hsl(${hue}, 70%, 75%)`;
+        }
+
         function getTimestamp() {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, '0');
@@ -619,9 +630,10 @@
         socket.on('updateOnlineList', (users) => {
             document.getElementById('online-count').innerText = users.length;
             const listDiv = document.getElementById('online-list');
-            listDiv.innerHTML = users.map(user => 
-                `<span class="online-user-item" onclick="setPrivateTarget('${user}')" title="Написать личное сообщение">${user}</span>`
-            ).join('');
+            listDiv.innerHTML = users.map(user => {
+                const userColor = getColorForNick(user);
+                return `<span class="online-user-item" onclick="setPrivateTarget('${user}')" title="Написать личное сообщение" style="color: ${userColor}; border-bottom: 2px solid ${userColor};">${user}</span>`
+            }).join('');
         });
 
         roomDiv.addEventListener('click', (e) => {
@@ -716,10 +728,11 @@
             }
         }
 
-        function addMessageToChat(nick, text, color) {
+        function addMessageToChat(nick, text) {
             const time = getTimestamp();
             const safeText = linkify(text);
-            const html = `<p><span class="msg-time">[${time}]</span><strong style="color:${color}">${nick}:</strong> ${safeText}</p>`;
+            const userColor = getColorForNick(nick);
+            const html = `<p><span class="msg-time">[${time}]</span><strong style="color:${userColor}">${nick}:</strong> ${safeText}</p>`;
             appendToHistory(html);
         }
 
@@ -736,7 +749,7 @@
             const time = getTimestamp();
             const safeText = linkify(data.text);
             
-            const html = `<p class="private-msg-text"><span class="msg-time">[${time}]</span><strong>${displayNick}:</strong> ${safeText}</p>`;
+            const html = `<p class="private-msg-text"><span class="msg-time">[${time}]</span><strong>${displayNick}:</strong> ${safeText}</p><strong style="color:${getColorForNick(isMe ? data.to : data.from)}">${displayNick}:</strong>`;
             appendToHistory(html);
 
             const bubbleTarget = isMe ? myNick : data.from;
