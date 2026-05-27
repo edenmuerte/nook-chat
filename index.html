@@ -290,7 +290,7 @@
         const socket = io('https://nook-chat.onrender.com'); 
         let myNick = '';
         let myAvatarUrl = '';
-        let currentRoom = 'yard';
+        let currentRoom = localStorage.getItem('nook_room') || 'yard';
         let authMode = 'login'; 
         let privateTarget = null; 
         
@@ -380,7 +380,7 @@
             'bedroom': 'https://res.cloudinary.com/dzpqigdfz/image/upload/f_auto,q_auto,w_2560/v1779891506/eden_Highly_detailed_isometric_34_interior_view_of_a_whimsica_5abd8e22-119e-4973-81f8-1cb92f2b060f_0_hpzqjv.webp',
             'attic': 'https://res.cloudinary.com/dzpqigdfz/image/upload/f_auto,q_auto,w_2560/v1779891506/eden_Highly_detailed_isometric_34_interior_view_of_a_whimsica_732018ca-a8c7-4bca-a8e5-1f2e7714dd46_0_wktjwf.webp'
         };
-        roomDiv.style.backgroundImage = `url('${roomBackgrounds['yard']}')`;
+        roomDiv.style.backgroundImage = `url('${roomBackgrounds[currentRoom]}')`;
 
         chatInput.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
@@ -491,11 +491,19 @@
                 });
             } else {
                 socket.emit('login', { nick, password: pass }, (response) => {
-                    if (response.success) { myNick = nick; myAvatarUrl = response.avatar; finalizeAuth(nick, pass); } 
-                    else { showError(response.message); btn.disabled = false; btn.innerText = 'Войти в комнату'; }
+                    if (response.success) { 
+                        myNick = nick; myAvatarUrl = response.avatar; finalizeAuth(nick, pass); 
+                    } else { 
+                        // ЕСЛИ СЕРВЕР НЕ ПУСТИЛ - ВОЗВРАЩАЕМ ОКНО ЛОГИНА
+                        document.getElementById('overlay').style.display = 'flex';
+                        document.getElementById('overlay').style.opacity = '1';
+                        
+                        showError(response.message); 
+                        btn.disabled = false; 
+                        btn.innerText = 'Войти в комнату'; 
+                    }
                 });
             }
-        }
 
     function finalizeAuth(nick, pass) {
             localStorage.setItem('nook_nick', nick);
@@ -582,7 +590,8 @@
             typingUsers.clear();
             updateTypingDisplay();
 
-            myX = 50; myY = 50;
+            let myX = parseFloat(localStorage.getItem('nook_x')) || 50;
+            let myY = parseFloat(localStorage.getItem('nook_y')) || 50;
             socket.emit('joinRoom', { nick: myNick, room: currentRoom, avatar: myAvatarUrl, x: myX, y: myY });
             updateAvatar(myNick, myAvatarUrl, myX, myY);
         }
@@ -620,6 +629,10 @@
             const rect = roomDiv.getBoundingClientRect();
             myX = ((e.clientX - rect.left) / rect.width) * 100;
             myY = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            // ДОБАВЬ ЭТИ ДВЕ СТРОКИ:
+            localStorage.setItem('nook_x', myX);
+            localStorage.setItem('nook_y', myY);
             
             updateAvatar(myNick, myAvatarUrl, myX, myY);
             socket.emit('move', { nick: myNick, avatar: myAvatarUrl, x: myX, y: myY });
