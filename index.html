@@ -330,13 +330,22 @@
             document.documentElement.setAttribute('data-theme', savedTheme);
             updateThemeIcon(savedTheme);
 
+            // 1. ДОСТАЕМ СОХРАНЕННУЮ КОМНАТУ
+            const savedRoom = localStorage.getItem('nook_room');
+            if (savedRoom) {
+                currentRoom = savedRoom;
+                document.getElementById('room-select').value = savedRoom;
+            }
+
             const savedNick = localStorage.getItem('nook_nick');
             const savedPass = localStorage.getItem('nook_pass');
             if (savedNick && savedPass) {
+                // 2. МГНОВЕННО ПРЯЧЕМ ОКНО ЛОГИНА (до отрисовки кадра)
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('overlay').style.opacity = '0';
+                
                 document.getElementById('nickname-input').value = savedNick;
                 document.getElementById('password-input').value = savedPass;
-                
-                // АВТОВХОД:
                 handleAuth(); 
             }
         });
@@ -561,6 +570,10 @@
         function changeRoom() {
             const select = document.getElementById('room-select');
             currentRoom = select.value;
+            
+            // СОХРАНЯЕМ ВЫБОР В ПАМЯТЬ БРАУЗЕРА
+            localStorage.setItem('nook_room', currentRoom);
+            
             roomDiv.style.backgroundImage = `url('${roomBackgrounds[currentRoom]}')`;
             
             const avatars = document.querySelectorAll('.avatar-container');
