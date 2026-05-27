@@ -185,8 +185,8 @@
         .file-input-label:hover { border-color: var(--accent); color: var(--accent); background: rgba(108, 92, 231, 0.05); }
         #avatar-file-input { display: none; }
         
-        #auth-button { padding: 14px; margin-top: 8px; border: none; border-radius: var(--radius-md); background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: var(--transition); width: 100%; font-family: 'Inter', sans-serif; box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
-        #auth-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4); }
+        #auth-button { padding: 14px; margin-top: 8px; border: none; border-radius: var(--radius-md); background: var(--accent); color: #1c1a19; font-size: 15px; font-weight: 600; cursor: pointer; transition: var(--transition); width: 100%; font-family: 'Inter', sans-serif; box-shadow: 0 4px 12px rgba(223, 183, 108, 0.3); }
+        #auth-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(223, 183, 108, 0.5); }
         #auth-button:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
 
         #error-msg { color: #ff4757; font-size: 13px; margin-top: 16px; font-weight: 500; display: none; background: rgba(255, 71, 87, 0.1); padding: 10px; border-radius: var(--radius-sm); }
@@ -211,7 +211,9 @@
             10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.2); }
             100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
         }
-        #floating-toggle { position: absolute; top: 16px; left: 16px; z-index: 99; display: none; background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-lg); } body.sidebar-collapsed #floating-toggle { display: flex; } #sidebar { transition: transform var(--transition); } body.sidebar-collapsed #sidebar { transform: translateX(-100%); } .input-row { display: flex; gap: 8px; width: 100%; }
+        #floating-toggle { position: absolute; top: 16px; left: 16px; z-index: 99; display: none; background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-lg); } body.sidebar-collapsed #floating-toggle { display: flex; } #sidebar { transition: transform var(--transition); } body.sidebar-collapsed #sidebar { transform: translateX(-100%); } 
+        .input-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
+        .input-row .icon-btn { height: auto; width: 50px; border-radius: var(--radius-lg); font-size: 20px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -225,8 +227,6 @@
                 <option value="bedroom">Спальня</option>
                 <option value="attic">Чердак</option>
             </select>
-            <button class="icon-btn" onclick="toggleTheme()" title="Переключить тему" id="theme-btn">☀️</button>
-            <button class="icon-btn danger" onclick="logout()" title="Выйти из аккаунта">🚪</button>
             <button class="icon-btn" onclick="toggleTheme()" title="Переключить тему" id="theme-btn">☀️</button>
             <button class="icon-btn" onclick="toggleSidebar()" title="Скрыть чат">👁️</button> <button class="icon-btn danger" onclick="logout()" title="Выйти из аккаунта">🚪</button>
         </div>
