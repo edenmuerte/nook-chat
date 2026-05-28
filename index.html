@@ -261,14 +261,15 @@
         <div id="chat-input-area">
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
             <div id="typing-indicator"></div>
-<div class="input-row" style="position: relative;"> 
-                <button class="icon-btn" id="emoji-toggle-btn" onclick="toggleEmojiModal(event)" title="Эмодзи">
-                    <i class="ph ph-smiley" style="font-size: 22px;"></i>
+            
+            <div class="input-row" style="position: relative;"> 
+                <button class="icon-btn" id="emoji-toggle-btn" onclick="toggleEmojiModal(event)" title="Эмодзи" style="width: 44px; height: 44px;">
+                    <i class="ph ph-smiley" style="font-size: 24px;"></i>
                 </button>
 
-                <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1;">
+                <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1; height: 44px;">
                 
-                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;">
+                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19; width: 44px; height: 44px;">
                     <i class="ph ph-paper-plane-right" style="font-size: 20px;"></i>
                 </button>
 
@@ -284,9 +285,8 @@
                     <span class="emoji-btn" onclick="sendEmoji('🥰')">🥰</span>
                     <span class="emoji-btn" onclick="sendEmoji('🤔')">🤔</span>
                 </div>
-            </div>>
-    </div>
-
+            </div>
+        </div>
     <div id="overlay">
         <div id="login-box">
             <h2 id="auth-title" style="margin-top: 0; margin-bottom: 24px; font-weight: 700; letter-spacing: -0.5px;">Вход в Nook</h2>
