@@ -19,7 +19,6 @@ webpush.setVapidDetails(
 );
 
 // Хранилище подписок в памяти (Ник -> Объект подписки)
-const pushSubscriptions = new Map();
 
 const app = express();
 const server = http.createServer(app);
@@ -35,7 +34,8 @@ mongoose.connect(MONGO_URI)
 const userSchema = new mongoose.Schema({
   nick: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  avatar: { type: String, default: '' }
+  avatar: { type: String, default: '' },
+  pushSubscription: { type: Object, default: null }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -122,70 +122,80 @@ io.on('connection', (socket) => {
     }
   });
 
-socket.on('chatMessage', (data) => {
+  socket.on('chatMessage', async (data) => {
     if (users[socket.id]) {
       socket.to(users[socket.id].room).emit('message', data);
     }
-    // --- НОВЫЙ КОД: Рассылка пушей ВСЕМ ---
+    
+    // Формируем пуш
     const payload = JSON.stringify({
-        title: data.nick, // Заголовок - имя отправителя
-        body: data.text,  // Текст сообщения
+        title: data.nick,
+        body: data.text,
         icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
     });
 
-    // Проходимся по всем сохраненным подпискам
-    pushSubscriptions.forEach((subscription, targetNick) => {
-         // Отправляем всем, кроме автора сообщения
-         if (targetNick !== data.nick) {
-            webpush.sendNotification(subscription, payload)
-                .catch(err => {
-                    console.error(`Ошибка пуша для ${targetNick}:`, err);
-                    // Если Apple/Google говорят, что токен протух (ошибка 410), удаляем его
+    try {
+        // Находим в БД всех пользователей, у которых есть подписка, кроме автора сообщения
+        const usersWithPush = await User.find({ 
+            nick: { $ne: data.nick }, 
+            pushSubscription: { $ne: null } 
+        });
+
+        usersWithPush.forEach(user => {
+            webpush.sendNotification(user.pushSubscription, payload)
+                .catch(async (err) => {
+                    console.error(`Ошибка пуша для ${user.nick}:`, err);
+                    // Если токен устройства протух (ошибка 410), удаляем его из БД
                     if (err.statusCode === 410 || err.statusCode === 404) {
-                        pushSubscriptions.delete(targetNick);
+                        await User.updateOne({ nick: user.nick }, { $set: { pushSubscription: null } });
                     }
                 });
-        }
-    });
-  }); // <--- ВОТ ЭТА ЗАКРЫВАЮЩАЯ СКОБКА ПОТЕРЯЛАСЬ!
-
-  socket.on('privateMessage', (data) => {
+        });
+    } catch (err) {
+        console.error('Ошибка при поиске подписок в БД:', err);
+    }
+  });
+    
+socket.on('privateMessage', async (data) => {
     const sender = users[socket.id];
     if (!sender) return;
     
+    // 1. Отправка сообщения в реальном времени (если получатель онлайн)
     const targetEntry = Object.entries(users).find(([id, u]) => u.nick === data.to);
     if (targetEntry) {
       const targetSocketId = targetEntry[0];
       const msgPayload = { from: sender.nick, to: data.to, text: data.text, avatar: sender.avatar };
       io.to(targetSocketId).emit('privateMessage', msgPayload);
-      socket.emit('privateMessage', msgPayload);
+      socket.emit('privateMessage', msgPayload); // дублируем себе
     } else {
       socket.emit('systemMessage', { text: `Пользователь ${data.to} не найден или не в сети.` });
     }
 
-    // --- НОВЫЙ КОД: Пуш-уведомление адресату ---
-    // Получаем подписку конкретного человека, которому пишем
-    const targetSub = pushSubscriptions.get(data.to);
+    // 2. Отправка Push-уведомления получателю (через базу данных MongoDB)
+    try {
+        // Ищем получателя в базе, чтобы достать его токен
+        const targetUser = await User.findOne({ nick: data.to });
         
-    // Если получатель когда-то разрешал пуши, отправляем:
-    if (targetSub) {
-         // ИСПРАВЛЕНО: берем имя отправителя из переменной sender.nick, а не из data
-         const senderNick = sender.nick || 'Кто-то'; 
+        if (targetUser && targetUser.pushSubscription) {
+             const senderNick = sender.nick || 'Кто-то'; 
 
-         const payload = JSON.stringify({
-            title: `Шепот от ${senderNick} 🤫`,
-            body: data.text,
-            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
-        });
-
-        webpush.sendNotification(targetSub, payload)
-            .catch(err => {
-                console.error(`Ошибка отправки пуша для ${data.to}:`, err);
-                // Если токен устарел (пользователь удалил PWA), чистим память сервера
-                if (err.statusCode === 410 || err.statusCode === 404) {
-                    pushSubscriptions.delete(data.to);
-                }
+             const payload = JSON.stringify({
+                title: `Шепот от ${senderNick} 🤫`,
+                body: data.text,
+                icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
             });
+
+            webpush.sendNotification(targetUser.pushSubscription, payload)
+                .catch(async (err) => {
+                    console.error(`Ошибка приватного пуша для ${data.to}:`, err);
+                    // Если токен устарел (удалили PWA или запретили пуши), чистим память в БД
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        await User.updateOne({ nick: data.to }, { $set: { pushSubscription: null } });
+                    }
+                });
+        }
+    } catch (err) {
+        console.error('Ошибка отправки приватного пуша:', err);
     }
   });
 
@@ -206,12 +216,16 @@ socket.on('chatMessage', (data) => {
       });
     }
   });
-
-  // Ловим подписку на пуши от клиента
-  socket.on('subscribeToPush', (data) => {
+    
+// Сохраняем подписку устройства в базу данных MongoDB
+  socket.on('subscribeToPush', async (data) => {
         if (data.nick && data.subscription) {
-            pushSubscriptions.set(data.nick, data.subscription);
-            console.log(`[Push] Подписка оформлена для пользователя: ${data.nick}`);
+            try {
+                await User.updateOne({ nick: data.nick }, { pushSubscription: data.subscription });
+                console.log(`[Push] Подписка успешно сохранена в БД для: ${data.nick}`);
+            } catch (err) {
+                console.error('Ошибка сохранения подписки в БД:', err);
+            }
         }
   });
 
