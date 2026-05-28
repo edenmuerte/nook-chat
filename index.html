@@ -132,7 +132,7 @@
         .private-msg-text { color: var(--accent); font-style: italic; border-left: 3px solid var(--accent); padding-left: 12px !important; background: var(--private-bg) !important; border-radius: 0 var(--radius-md) var(--radius-md) 0 !important; }
 
         /* ЗОНА ВВОДА */
-        #chat-input-area { flex-shrink: 0; display: flex; flex-direction: column; padding: 16px; border-top: 1px solid var(--border-color); gap: 8px; background: rgba(0,0,0,0.02); }
+        <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1; min-width: 0; height: 44px;">
         
         #private-target-badge { display: none; background: var(--accent); color: #fff; padding: 4px 12px; font-size: 12px; font-weight: 600; border-radius: 20px; cursor: pointer; align-self: flex-start; transition: var(--transition); box-shadow: var(--shadow-sm); }
         #private-target-badge:hover { background: var(--accent-hover); transform: translateY(-1px); }
