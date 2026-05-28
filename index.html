@@ -131,11 +131,10 @@
 
         .private-msg-text { color: var(--accent); font-style: italic; border-left: 3px solid var(--accent); padding-left: 12px !important; background: var(--private-bg) !important; border-radius: 0 var(--radius-md) var(--radius-md) 0 !important; }
 
-        /* ЗОНА ВВОДА */
-        <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1; min-width: 0; height: 44px;">
+/* ЗОНА ВВОДА */
+        #chat-input-area { flex-shrink: 0; display: flex; flex-direction: column; padding: 16px; border-top: 1px solid var(--border-color); gap: 8px; background: rgba(0,0,0,0.02); }
         
         #private-target-badge { display: none; background: var(--accent); color: #fff; padding: 4px 12px; font-size: 12px; font-weight: 600; border-radius: 20px; cursor: pointer; align-self: flex-start; transition: var(--transition); box-shadow: var(--shadow-sm); }
-        #private-target-badge:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
         #typing-indicator { color: var(--text-muted); font-size: 11px; font-style: italic; min-height: 14px; transition: opacity 0.2s; opacity: 0; padding-left: 4px; }
 
@@ -287,7 +286,7 @@
                 </div>
             </div>
         </div>
-    <div id="overlay">
+    </div> <div id="overlay">
         <div id="login-box">
             <h2 id="auth-title" style="margin-top: 0; margin-bottom: 24px; font-weight: 700; letter-spacing: -0.5px;">Вход в Nook</h2>
             <div id="auth-tabs">
