@@ -131,14 +131,55 @@
 
         .private-msg-text { color: var(--accent); font-style: italic; border-left: 3px solid var(--accent); padding-left: 12px !important; background: var(--private-bg) !important; border-radius: 0 var(--radius-md) var(--radius-md) 0 !important; }
 
-/* ЗОНА ВВОДА */
-        #chat-input-area { flex-shrink: 0; display: flex; flex-direction: column; padding: 16px; border-top: 1px solid var(--border-color); gap: 8px; background: rgba(0,0,0,0.02); }
+        /* --- ЗОНА ВВОДА И КНОПКИ --- */
+        #chat-input-area { 
+            flex-shrink: 0; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 16px; /* Те самые спасительные отступы от краев! */
+            border-top: 1px solid var(--border-color); 
+            gap: 8px; 
+            background: rgba(0,0,0,0.1); 
+        }
         
         #private-target-badge { display: none; background: var(--accent); color: #fff; padding: 4px 12px; font-size: 12px; font-weight: 600; border-radius: 20px; cursor: pointer; align-self: flex-start; transition: var(--transition); box-shadow: var(--shadow-sm); }
-
         #typing-indicator { color: var(--text-muted); font-size: 11px; font-style: italic; min-height: 14px; transition: opacity 0.2s; opacity: 0; padding-left: 4px; }
 
-        #chat-input { padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-panel); color: var(--text-main); outline: none; font-family: 'Inter', sans-serif; font-size: 14px; transition: var(--transition); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .input-row { 
+            position: relative; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+        }
+        
+        .input-row .icon-btn { 
+            width: 44px; 
+            height: 44px; 
+            border-radius: 14px; /* Красивое скругление как в iOS */
+            flex-shrink: 0; 
+            padding: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 24px; 
+        }
+        
+        #chat-input { 
+            flex: 1; 
+            min-width: 0; 
+            height: 44px; 
+            margin: 0; 
+            padding: 0 16px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 14px; 
+            background: var(--bg-panel); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            font-size: 14px; 
+            outline: none; 
+            transition: var(--transition); 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); 
+        }
         #chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1); }
         
         /* ПЕРСОНАЖИ И БАБЛЫ */
@@ -257,18 +298,18 @@
         <div id="online-header">Онлайн: <span id="online-count">0</span></div>
         <div id="online-list"></div>
         <div id="chat-history"></div>
-        <div id="chat-input-area">
+<div id="chat-input-area">
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
             <div id="typing-indicator"></div>
             
-            <div class="input-row" style="position: relative; display: flex; gap: 8px; width: 100%; align-items: center;"> 
-                <button class="icon-btn" id="emoji-toggle-btn" onclick="toggleEmojiModal(event)" title="Эмодзи" style="width: 44px; height: 44px; flex-shrink: 0; padding: 0;">
-                    <i class="ph ph-smiley" style="font-size: 24px;"></i>
+            <div class="input-row"> 
+                <button class="icon-btn" id="emoji-toggle-btn" onclick="toggleEmojiModal(event)" title="Эмодзи">
+                    <i class="ph ph-smiley"></i>
                 </button>
 
-                <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1; min-width: 0; height: 44px; margin: 0;">
+                <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500">
                 
-                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19; width: 44px; height: 44px; flex-shrink: 0; padding: 0;">
+                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;">
                     <i class="ph ph-paper-plane-right" style="font-size: 20px;"></i>
                 </button>
 
