@@ -15,6 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         /* --- СОВРЕМЕННЫЙ ВИЗУАЛЬНЫЙ ДВИЖОК --- */
         :root { --bg-sidebar: rgba(28, 26, 25, 0.65); --bg-panel: rgba(43, 39, 37, 0.75); --bg-input: rgba(0, 0, 0, 0.3); --text-main: #f5f0eb; --text-muted: #bcaba0; --border-color: rgba(236, 219, 186, 0.08); --accent: #dfb76c; --accent-hover: #f1c40f; --private-bg: rgba(223, 183, 108, 0.1); --shadow-sm: 0 4px 12px rgba(0,0,0,0.2); --shadow-lg: 0 12px 32px rgba(0,0,0,0.4); --radius-lg: 16px; --radius-md: 12px; --radius-sm: 8px; --transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
@@ -205,7 +206,7 @@
 </head>
 <body>
     <div id="offline-badge">⚡ Потеряно соединение...</div>
-    <button class="icon-btn" id="floating-toggle" onclick="toggleSidebar()" title="Показать чат">💬</button>
+    <button class="icon-btn" id="floating-toggle" onclick="toggleSidebar()" title="Показать чат"><i class="ph ph-chat-circle"></i></button>
     <div id="room"></div>
     <div id="sidebar">
         <div id="room-selector">
@@ -215,13 +216,14 @@
                 <option value="bedroom">Спальня</option>
                 <option value="attic">Чердак</option>
             </select>
-            <button class="icon-btn" onclick="toggleTheme()" title="Переключить тему" id="theme-btn">☀️</button>
-            <button class="icon-btn" onclick="toggleSidebar()" title="Скрыть чат">👁️</button> <button class="icon-btn danger" onclick="logout()" title="Выйти из аккаунта">🚪</button>
+            <button class="icon-btn" onclick="toggleTheme()" title="Переключить тему" id="theme-btn"><i class="ph ph-sun"></i></button>
+            <button class="icon-btn" onclick="toggleSidebar()" title="Скрыть чат"><i class="ph ph-eye-slash"></i></button>
+            <button class="icon-btn danger" onclick="logout()" title="Выйти из аккаунта"><i class="ph ph-sign-out"></i></button>
         </div>
 
         <div id="profile-panel">
             <span id="my-nick-display"></span>
-            <button class="icon-btn" onclick="enableNotifications()" title="Включить уведомления" id="notify-btn" style="width: 32px; height: 32px; font-size: 14px;">🔔</button>
+            <button class="icon-btn" onclick="enableNotifications()" title="Включить уведомления" id="notify-btn" style="width: 32px; height: 32px; font-size: 16px;"><i class="ph ph-bell"></i></button>
             <label for="change-avatar-input" id="change-avatar-label" class="change-avatar-label">Сменить аватар</label>
             <input type="file" id="change-avatar-input" accept="image/*" onchange="handleChangeAvatar()">
         </div>
@@ -233,7 +235,7 @@
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
             <div id="typing-indicator"></div>
             <div class="input-row"> <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1;">
-                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;">⬆️</button> </div>
+                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;"><i class="ph ph-paper-plane-right" style="font-size: 20px;"></i></button>
             
             <div id="emoji-bar">
                 <span class="emoji-btn" onclick="sendEmoji('❤️')">❤️</span>
@@ -323,7 +325,8 @@
         }
 
         function updateThemeIcon(theme) {
-            document.getElementById('theme-btn').innerText = theme === 'dark' ? '☀️' : '🌙';
+            // Меняем класс иконки с солнца на луну и обратно
+            document.getElementById('theme-btn').innerHTML = theme === 'dark' ? '<i class="ph ph-sun"></i>' : '<i class="ph ph-moon"></i>';
         }
     // --- СИНХРОНИЗАЦИЯ СОКЕТА ПРИ БЛОКИРОВКЕ/СВОРАЧИВАНИИ ---
         
