@@ -122,7 +122,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('chatMessage', (data) => {
+socket.on('chatMessage', (data) => {
     if (users[socket.id]) {
       socket.to(users[socket.id].room).emit('message', data);
     }
@@ -146,11 +146,13 @@ io.on('connection', (socket) => {
                     }
                 });
         }
-  });
+    });
+  }); // <--- ВОТ ЭТА ЗАКРЫВАЮЩАЯ СКОБКА ПОТЕРЯЛАСЬ!
 
   socket.on('privateMessage', (data) => {
     const sender = users[socket.id];
     if (!sender) return;
+    
     const targetEntry = Object.entries(users).find(([id, u]) => u.nick === data.to);
     if (targetEntry) {
       const targetSocketId = targetEntry[0];
@@ -160,14 +162,15 @@ io.on('connection', (socket) => {
     } else {
       socket.emit('systemMessage', { text: `Пользователь ${data.to} не найден или не в сети.` });
     }
+
     // --- НОВЫЙ КОД: Пуш-уведомление адресату ---
     // Получаем подписку конкретного человека, которому пишем
     const targetSub = pushSubscriptions.get(data.to);
         
     // Если получатель когда-то разрешал пуши, отправляем:
     if (targetSub) {
-        // В зависимости от того, как у тебя на сервере передается автор (data.from или socket.nick)
-         const senderNick = data.from || 'Кто-то'; 
+         // ИСПРАВЛЕНО: берем имя отправителя из переменной sender.nick, а не из data
+         const senderNick = sender.nick || 'Кто-то'; 
 
          const payload = JSON.stringify({
             title: `Шепот от ${senderNick} 🤫`,
@@ -183,7 +186,7 @@ io.on('connection', (socket) => {
                     pushSubscriptions.delete(data.to);
                 }
             });
-        }
+    }
   });
 
   socket.on('move', (data) => {
