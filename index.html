@@ -266,7 +266,22 @@
             10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.2); }
             100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(1); }
         }
-        #floating-toggle { position: absolute; top: 16px; left: 16px; z-index: 99; display: none; background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-lg); } body.sidebar-collapsed #floating-toggle { display: flex; } #sidebar { transition: transform var(--transition); } body.sidebar-collapsed #sidebar { transform: translateX(-100%); } 
+        /* Умная кнопка, которая обходит челку на айфонах */
+        #floating-toggle { 
+            position: absolute; 
+            /* Если есть челка, отступаем от нее, если нет - берем стандартные 16px */
+            top: calc(env(safe-area-inset-top, 0px) + 16px); 
+            left: calc(env(safe-area-inset-left, 0px) + 16px); 
+            z-index: 150; /* Подняли повыше, на всякий случай */
+            display: none; 
+            background: var(--bg-panel); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            box-shadow: var(--shadow-lg); 
+            /* Делаем ее 44x44, чтобы соответствовать стандартам Apple для клика пальцем */
+            width: 44px;
+            height: 44px;
+        } 
         .input-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
         .input-row .icon-btn { height: auto; width: 50px; border-radius: var(--radius-lg); font-size: 20px; flex-shrink: 0; }
     </style>
