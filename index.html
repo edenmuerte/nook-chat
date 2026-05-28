@@ -185,6 +185,7 @@
         @media (max-width: 768px) { #room { bottom: 55dvh; transition: bottom var(--transition); } #sidebar { top: 45dvh; width: 100%; transition: transform var(--transition); border-left: none; border-top: 1px solid var(--border-color); } body.sidebar-collapsed #room { bottom: 0; } body.sidebar-collapsed #sidebar { transform: translateY(100%); } body.sidebar-collapsed #floating-toggle { display: flex; } #online-header, #online-list { display: none !important; } }
         
         /* --- СТИЛИ ДЛЯ ЭМОДЗИ --- */
+        #offline-badge { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4757; color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4); display: none; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: 0.3s; }
         #emoji-bar { display: flex; gap: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
         #emoji-bar::-webkit-scrollbar { display: none; }
         .emoji-btn { font-size: 20px; cursor: pointer; transition: transform 0.2s, background 0.2s; user-select: none; padding: 4px; border-radius: var(--radius-sm); }
@@ -203,6 +204,7 @@
     </style>
 </head>
 <body>
+    <div id="offline-badge">⚡ Потеряно соединение...</div>
     <button class="icon-btn" id="floating-toggle" onclick="toggleSidebar()" title="Показать чат">💬</button>
     <div id="room"></div>
     <div id="sidebar">
@@ -323,7 +325,40 @@
         function updateThemeIcon(theme) {
             document.getElementById('theme-btn').innerText = theme === 'dark' ? '☀️' : '🌙';
         }
+    // --- СИНХРОНИЗАЦИЯ СОКЕТА ПРИ БЛОКИРОВКЕ/СВОРАЧИВАНИИ ---
+        
+        const offlineBadge = document.getElementById('offline-badge');
 
+        // Когда связь рвется (заблокировали экран)
+        socket.on('disconnect', () => {
+            offlineBadge.style.display = 'block';
+            chatInput.disabled = true; // Блокируем инпут, чтобы текст не пропал
+            chatInput.placeholder = 'Подключение к серверу...';
+        });
+
+        // Когда связь восстанавливается
+        socket.on('connect', () => {
+            offlineBadge.style.display = 'none';
+            chatInput.disabled = false;
+            chatInput.placeholder = 'Написать сообщение...';
+            
+            // Если мы уже вошли в чат (есть ник), нужно заново "войти" в комнату,
+            // чтобы получить свежие координаты соседей и список онлайна
+            if (myNick) {
+                changeRoom(); 
+            }
+        });
+
+        // Магия для iOS/Android: когда мы возвращаемся в приложение
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // Пингуем сокет: если он мертв, принудительно заставляем его ожить
+                if (!socket.connected) {
+                    offlineBadge.style.display = 'block';
+                    socket.connect();
+                }
+            }
+        });
     window.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('nook_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
