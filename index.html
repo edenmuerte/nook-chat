@@ -307,7 +307,7 @@
                     <i class="ph ph-smiley"></i>
                 </button>
 
-                <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500">
+                <input type="text" id="chat-input" placeholder="Написать..." maxlength="500">
                 
                 <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;">
                     <i class="ph ph-paper-plane-right" style="font-size: 20px;"></i>
@@ -598,7 +598,7 @@
             const pass = document.getElementById('password-input').value.trim();
             const btn = document.getElementById('auth-button');
             if (!nick || !pass) { showError('Введи никнейм и пароль'); return; }
-            btn.disabled = true; btn.innerText = 'Секундочку...'; document.getElementById('error-msg').style.display = 'none';
+            btn.disabled = true; btn.innerText = 'Загрузка...'; document.getElementById('error-msg').style.display = 'none';
 
             if (authMode === 'register') {
                 let avatarUrl = '';
@@ -919,9 +919,9 @@
                         
                         // Прячем колокольчик, так как всё готово
                         document.getElementById('notify-btn').style.display = 'none'; 
-                        alert('Ура! Уведомления включены.');
+                        alert('Уведомления включены.');
                     } else {
-                        alert('Вы запретили уведомления. Чтобы включить их, зайдите в настройки Safari/браузера.');
+                        alert('Вы запретили уведомления. Чтобы включить их, зайдите в настройки браузера.');
                     }
                 } catch (error) {
                     console.error('Ошибка подписки:', error);
