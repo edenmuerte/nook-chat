@@ -5,6 +5,22 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');   
 const path = require('path'); // НОВОЕ: модуль для путей
 
+const webpush = require('web-push');
+
+// Вставь сюда ключи
+const vapidPublicKey = 'BA6TSlaJJJegLh5anQFoGhNJDx6PXenQnnBovXttARPVH0gpZ4VqLZfN_sF2vuBEKOUtIQj1khPl6QIA6-dlQic';
+const vapidPrivateKey = '8hUixGe5f3NB34spUqdaTQIyzRbl2u9kpcrSL51tx9Y';
+
+// Почта нужна сервисам Google/Apple для связи с разработчиком в случае проблем
+webpush.setVapidDetails(
+    'mailto:eden.muerte@gmail.com', 
+    vapidPublicKey, 
+    vapidPrivateKey
+);
+
+// Хранилище подписок в памяти (Ник -> Объект подписки)
+const pushSubscriptions = new Map();
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
@@ -110,6 +126,26 @@ io.on('connection', (socket) => {
     if (users[socket.id]) {
       socket.to(users[socket.id].room).emit('message', data);
     }
+    // --- НОВЫЙ КОД: Рассылка пушей ВСЕМ ---
+    const payload = JSON.stringify({
+        title: data.nick, // Заголовок - имя отправителя
+        body: data.text,  // Текст сообщения
+        icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+    });
+
+    // Проходимся по всем сохраненным подпискам
+    pushSubscriptions.forEach((subscription, targetNick) => {
+         // Отправляем всем, кроме автора сообщения
+         if (targetNick !== data.nick) {
+            webpush.sendNotification(subscription, payload)
+                .catch(err => {
+                    console.error(`Ошибка пуша для ${targetNick}:`, err);
+                    // Если Apple/Google говорят, что токен протух (ошибка 410), удаляем его
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        pushSubscriptions.delete(targetNick);
+                    }
+                });
+        }
   });
 
   socket.on('privateMessage', (data) => {
@@ -124,6 +160,30 @@ io.on('connection', (socket) => {
     } else {
       socket.emit('systemMessage', { text: `Пользователь ${data.to} не найден или не в сети.` });
     }
+    // --- НОВЫЙ КОД: Пуш-уведомление адресату ---
+    // Получаем подписку конкретного человека, которому пишем
+    const targetSub = pushSubscriptions.get(data.to);
+        
+    // Если получатель когда-то разрешал пуши, отправляем:
+    if (targetSub) {
+        // В зависимости от того, как у тебя на сервере передается автор (data.from или socket.nick)
+         const senderNick = data.from || 'Кто-то'; 
+
+         const payload = JSON.stringify({
+            title: `Шепот от ${senderNick} 🤫`,
+            body: data.text,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+        });
+
+        webpush.sendNotification(targetSub, payload)
+            .catch(err => {
+                console.error(`Ошибка отправки пуша для ${data.to}:`, err);
+                // Если токен устарел (пользователь удалил PWA), чистим память сервера
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                    pushSubscriptions.delete(data.to);
+                }
+            });
+        }
   });
 
   socket.on('move', (data) => {
@@ -142,6 +202,14 @@ io.on('connection', (socket) => {
         isTyping: isTyping
       });
     }
+  });
+
+  // Ловим подписку на пуши от клиента
+  socket.on('subscribeToPush', (data) => {
+        if (data.nick && data.subscription) {
+            pushSubscriptions.set(data.nick, data.subscription);
+            console.log(`[Push] Подписка оформлена для пользователя: ${data.nick}`);
+        }
   });
 
   // Обработка всплывающих эмодзи
