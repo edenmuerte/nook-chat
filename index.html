@@ -55,7 +55,7 @@
         #sidebar { position: absolute; top: 0; left: 0; bottom: 0; width: 320px; background: var(--bg-sidebar); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; box-shadow: 4px 0 24px rgba(0,0,0,0.1); transition: background var(--transition), border-color var(--transition); }
         
         /* ИСПРАВЛЕННАЯ ШАПКА КОНТЕЙНЕРА */
-        #room-selector { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; }
+        #room-selector { flex-shrink: 0; padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; }
         
         #room-select { 
             flex: 1; 
@@ -131,7 +131,7 @@
         .private-msg-text { color: var(--accent); font-style: italic; border-left: 3px solid var(--accent); padding-left: 12px !important; background: var(--private-bg) !important; border-radius: 0 var(--radius-md) var(--radius-md) 0 !important; }
 
         /* ЗОНА ВВОДА */
-        #chat-input-area { display: flex; flex-direction: column; padding: 16px; border-top: 1px solid var(--border-color); gap: 8px; background: rgba(0,0,0,0.02); }
+        #chat-input-area { flex-shrink: 0; display: flex; flex-direction: column; padding: 16px; border-top: 1px solid var(--border-color); gap: 8px; background: rgba(0,0,0,0.02); }
         
         #private-target-badge { display: none; background: var(--accent); color: #fff; padding: 4px 12px; font-size: 12px; font-weight: 600; border-radius: 20px; cursor: pointer; align-self: flex-start; transition: var(--transition); box-shadow: var(--shadow-sm); }
         #private-target-badge:hover { background: var(--accent-hover); transform: translateY(-1px); }
@@ -182,7 +182,7 @@
         ::-webkit-scrollbar-thumb { background: rgba(160, 160, 171, 0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(160, 160, 171, 0.5); }
 
-        @media (max-width: 768px) { #room { bottom: 35%; bottom: 35dvh; transition: bottom var(--transition); } #sidebar { top: 65%; top: 65dvh; width: 100%; transition: transform var(--transition); border-left: none; border-top: 1px solid var(--border-color); } body.sidebar-collapsed #room { bottom: 0; } body.sidebar-collapsed #sidebar { transform: translateY(100%); } body.sidebar-collapsed #floating-toggle { display: flex; } }
+        @media (max-width: 768px) { #room { bottom: 55dvh; transition: bottom var(--transition); } #sidebar { top: 45dvh; width: 100%; transition: transform var(--transition); border-left: none; border-top: 1px solid var(--border-color); } body.sidebar-collapsed #room { bottom: 0; } body.sidebar-collapsed #sidebar { transform: translateY(100%); } body.sidebar-collapsed #floating-toggle { display: flex; } #online-header, #online-list { display: none !important; } }
         
         /* --- СТИЛИ ДЛЯ ЭМОДЗИ --- */
         #emoji-bar { display: flex; gap: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
