@@ -185,12 +185,39 @@
 
         @media (max-width: 768px) { #room { bottom: 55dvh; transition: bottom var(--transition); } #sidebar { top: 45dvh; width: 100%; transition: transform var(--transition); border-left: none; border-top: 1px solid var(--border-color); } body.sidebar-collapsed #room { bottom: 0; } body.sidebar-collapsed #sidebar { transform: translateY(100%); } body.sidebar-collapsed #floating-toggle { display: flex; } #online-header, #online-list { display: none !important; } }
         
-        /* --- СТИЛИ ДЛЯ ЭМОДЗИ --- */
-        #offline-badge { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4757; color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4); display: none; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: 0.3s; }
-        #emoji-bar { display: flex; gap: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
-        #emoji-bar::-webkit-scrollbar { display: none; }
-        .emoji-btn { font-size: 20px; cursor: pointer; transition: transform 0.2s, background 0.2s; user-select: none; padding: 4px; border-radius: var(--radius-sm); }
-        .emoji-btn:hover { transform: scale(1.2); background: rgba(128, 128, 128, 0.2); }
+        /* --- СТИЛИ ДЛЯ ЭМОДЗИ МОДАЛКИ --- */
+        #emoji-modal {
+            position: absolute;
+            bottom: calc(100% + 8px); /* Открывается ровно над полем ввода с отступом */
+            left: 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 колонок как в мессенджерах */
+            gap: 6px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            
+            /* Скрыто по умолчанию с плавной анимацией появления */
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 50;
+        }
+
+        #emoji-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .emoji-btn { font-size: 24px; cursor: pointer; transition: transform 0.2s, background 0.2s; user-select: none; padding: 6px; border-radius: var(--radius-sm); text-align: center; }
+        .emoji-btn:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.1); }
+        [data-theme="light"] .emoji-btn:hover { background: rgba(0, 0, 0, 0.05); }
         
         /* Анимация всплывающего эмодзи */
         .floating-emoji { position: absolute; font-size: 28px; pointer-events: none; z-index: 30; animation: floatUpEmoji 2s ease-out forwards; text-shadow: 0 2px 4px rgba(0,0,0,0.3); left: 50%; bottom: 80%; transform: translateX(-50%); }
@@ -234,22 +261,30 @@
         <div id="chat-input-area">
             <div id="private-target-badge" onclick="clearPrivateTarget()" title="Нажмите, чтобы отменить"></div>
             <div id="typing-indicator"></div>
-            <div class="input-row"> <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1;">
-                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;"><i class="ph ph-paper-plane-right" style="font-size: 20px;"></i></button>
-            
-            <div id="emoji-bar">
-                <span class="emoji-btn" onclick="sendEmoji('❤️')">❤️</span>
-                <span class="emoji-btn" onclick="sendEmoji('💔')">💔</span>
-                <span class="emoji-btn" onclick="sendEmoji('😂')">😂</span>
-                <span class="emoji-btn" onclick="sendEmoji('😭')">😭</span>
-                <span class="emoji-btn" onclick="sendEmoji('😱')">😱</span>
-                <span class="emoji-btn" onclick="sendEmoji('🫠')">🫠</span>
-                <span class="emoji-btn" onclick="sendEmoji('🗿')">🗿</span>
-                <span class="emoji-btn" onclick="sendEmoji('🌚')">🌚</span>
-                <span class="emoji-btn" onclick="sendEmoji('🥰')">🥰</span>
-                <span class="emoji-btn" onclick="sendEmoji('🤔')">🤔</span>
-            </div>
-        </div>
+<div class="input-row" style="position: relative;"> 
+                <button class="icon-btn" id="emoji-toggle-btn" onclick="toggleEmojiModal(event)" title="Эмодзи">
+                    <i class="ph ph-smiley" style="font-size: 22px;"></i>
+                </button>
+
+                <input type="text" id="chat-input" placeholder="Написать сообщение..." maxlength="500" style="flex: 1;">
+                
+                <button class="icon-btn" onclick="sendMessage()" title="Отправить" style="background: var(--accent); color: #1c1a19;">
+                    <i class="ph ph-paper-plane-right" style="font-size: 20px;"></i>
+                </button>
+
+                <div id="emoji-modal">
+                    <span class="emoji-btn" onclick="sendEmoji('❤️')">❤️</span>
+                    <span class="emoji-btn" onclick="sendEmoji('💔')">💔</span>
+                    <span class="emoji-btn" onclick="sendEmoji('😂')">😂</span>
+                    <span class="emoji-btn" onclick="sendEmoji('😭')">😭</span>
+                    <span class="emoji-btn" onclick="sendEmoji('😱')">😱</span>
+                    <span class="emoji-btn" onclick="sendEmoji('🫠')">🫠</span>
+                    <span class="emoji-btn" onclick="sendEmoji('🗿')">🗿</span>
+                    <span class="emoji-btn" onclick="sendEmoji('🌚')">🌚</span>
+                    <span class="emoji-btn" onclick="sendEmoji('🥰')">🥰</span>
+                    <span class="emoji-btn" onclick="sendEmoji('🤔')">🤔</span>
+                </div>
+            </div>>
     </div>
 
     <div id="overlay">
@@ -743,6 +778,25 @@
         }
 
         // --- ЛОГИКА ЭМОДЗИ ---
+        
+        // Показать/скрыть модалку эмодзи
+        function toggleEmojiModal(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('emoji-modal').classList.toggle('show');
+        }
+
+        // Закрываем модалку при тапе в любое другое место экрана
+        document.addEventListener('click', (event) => {
+            const modal = document.getElementById('emoji-modal');
+            const toggleBtn = document.getElementById('emoji-toggle-btn');
+            
+            if (modal && modal.classList.contains('show')) {
+                if (!modal.contains(event.target) && !toggleBtn.contains(event.target)) {
+                    modal.classList.remove('show');
+                }
+            }
+        });
+
         function sendEmoji(emoji) {
             if (!myNick) return;
             
@@ -755,6 +809,8 @@
             
             // 3. Возвращаем фокус на поле ввода, чтобы можно было сразу печатать дальше
             chatInput.focus();
+
+            document.getElementById('emoji-modal').classList.remove('show');
         }
 
         socket.on('emojiReaction', (data) => {
